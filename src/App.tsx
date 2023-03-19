@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { createUseStyles } from 'react-jss'
-import PitchRenderer from './PitchRenderer'
+import { useState } from 'react';
+import { createUseStyles } from 'react-jss';
+import PitchRenderer from './PitchRenderer';
 
 const useStyles = createUseStyles({
   app: {
@@ -12,13 +12,13 @@ const useStyles = createUseStyles({
   disconnected: {
     color: 'red',
   },
-})
+});
 
 const App = () => {
-  const classes = useStyles()
-  const [isConnected, setIsConnected] = useState(false)
+  const classes = useStyles();
+  const [isConnected, setIsConnected] = useState(false);
   
-  const [gameObjects, setGameObjects] = useState(null)
+  const [gameObjects, setGameObjects] = useState(null);
 
 
   return (
@@ -32,7 +32,7 @@ const App = () => {
         <div>
           <button
             onClick={() => {
-              setIsConnected(!isConnected)
+              setIsConnected(!isConnected);
               setGameObjects({
 
                 ball: {
@@ -41,8 +41,8 @@ const App = () => {
                     y: 100 + (20 * +isConnected),
                   },
                   radius: 20,
-                }
-              })
+                },
+              });
             }}
           >
             Create Game
@@ -59,7 +59,7 @@ const App = () => {
         />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;
