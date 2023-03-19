@@ -1,32 +1,43 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { createUseStyles } from 'react-jss'
+
+const useStyles = createUseStyles({
+  app: {
+    margin: '0px 30px',
+  },
+  connected: {
+    color: 'greenyellow',
+  },
+  disconnected: {
+    color: 'red',
+  },
+})
 
 function App() {
-  const [count, setCount] = useState(0)
+  const classes = useStyles()
+  const [isConnected, setIsConnected] = useState(false)
 
   return (
-    <div className="App">
+    <div className={classes.app}>
+      <h1>Sudoball</h1>
+
       <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <h3 className={isConnected ? classes.connected : classes.disconnected}>
+          {isConnected ? 'Channel Open' : 'Disconnected'}
+        </h3>
+        <div>
+          <button>
+            Create Game
+          </button>
+
+          <button>
+            Join Game
+          </button>
+
+          <input type="text" />
+        </div>
+
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </div>
   )
 }
