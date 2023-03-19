@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createUseStyles } from 'react-jss'
+import PitchRenderer from './PitchRenderer'
 
 const useStyles = createUseStyles({
   app: {
@@ -13,9 +14,12 @@ const useStyles = createUseStyles({
   },
 })
 
-function App() {
+const App = () => {
   const classes = useStyles()
   const [isConnected, setIsConnected] = useState(false)
+  
+  const [gameObjects, setGameObjects] = useState(null)
+
 
   return (
     <div className={classes.app}>
@@ -26,7 +30,21 @@ function App() {
           {isConnected ? 'Channel Open' : 'Disconnected'}
         </h3>
         <div>
-          <button>
+          <button
+            onClick={() => {
+              setIsConnected(!isConnected)
+              setGameObjects({
+
+                ball: {
+                  position: {
+                    x: 200,
+                    y: 100 + (20 * +isConnected),
+                  },
+                  radius: 20,
+                }
+              })
+            }}
+          >
             Create Game
           </button>
 
@@ -36,7 +54,9 @@ function App() {
 
           <input type="text" />
         </div>
-
+        <PitchRenderer
+          gameObjects={gameObjects}
+        />
       </div>
     </div>
   )
