@@ -1,23 +1,30 @@
 import { QueryDocumentSnapshot } from '@firebase/firestore-types';
 import { EventEmitter } from './Events';
 import { db } from './firebase';
+import { TestClientPayload } from './types';
 
 type ClientConnectionDoc = {
-  offer: RTCSessionDescriptionInitSignal,
-  answer?: RTCSessionDescriptionInitSignal,
+  offer: RTCSessionDescriptionInitSignal;
+  answer?: RTCSessionDescriptionInitSignal;
 }
 
 type RTCSessionDescriptionInitSignal = {
-  sdp: string | undefined,
-  type: RTCSdpType,
+  sdp: string | undefined;
+  type: RTCSdpType;
 }
 
 type OutboundChannel = {
-  close: () => void,
-  channel: RTCDataChannel,
+  close: () => void;
+  channel: RTCDataChannel;
 }
 
-export class ConnectionHost extends EventEmitter {
+type ConnectionHostEvents = {
+  clientConnected: (clientId: string) => void;
+  clientDisconnected: (clientId: string) => void;
+  messageReceived: (clientId: string, data: TestClientPayload) => void;
+}
+
+export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
   hostId: string;
   private outboundChannels: Map<string, OutboundChannel> = new Map();
 
@@ -89,10 +96,7 @@ export class ConnectionHost extends EventEmitter {
         this.outboundChannels.delete(clientId);
         this.emit('clientDisconnected', clientId);
       };
-      receiveChannel.onmessage = (event) => this.emit('messageReceived', {
-        clientId,
-        data: JSON.parse(event.data),
-      });
+      receiveChannel.onmessage = event => this.emit('messageReceived', clientId, JSON.parse(event.data));
       receiveChannel.onerror = error => console.error('receive channel error:', error);
     };
 

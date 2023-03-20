@@ -41,7 +41,7 @@ const App = () => {
         return new Set(prev);
       });
     });
-    host.on('messageReceived', ({ data, clientId }) => {
+    host.on('messageReceived', (clientId, data) => {
       setReceivedMessages(prev => [...prev, [clientId, data.message]]);
     });
     setConnHost(host);

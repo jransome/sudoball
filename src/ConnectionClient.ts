@@ -1,7 +1,13 @@
 import { EventEmitter } from './Events';
 import { db } from './firebase';
+import { TestClientPayload } from './types';
 
-export class ConnectionClient extends EventEmitter {
+type ConnectionClientEvents = {
+  hostClosed: () => void;
+  messageReceived: (data: TestClientPayload) => void;
+}
+
+export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
   clientId: string;
   private peerConnection!: RTCPeerConnection;
   private sendChannel!: RTCDataChannel;
