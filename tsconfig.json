@@ -23,11 +23,12 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
-    "noImplicitThis": false,
+    "noImplicitThis": true,
+    "noImplicitOverride": true,
     "strictFunctionTypes": true,
+    "strictNullChecks": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "strictNullChecks": false,
   },
   "include": [
     "src"
