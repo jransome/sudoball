@@ -125,6 +125,7 @@ const App = () => {
         </h3>
         <div>
           <button
+            id='create-game'
             onClick={() => {
               createGame();
               setAttemptingConnection(true);
@@ -135,6 +136,7 @@ const App = () => {
           </button>
 
           <button
+            id='join-game'
             onClick={() => {
               joinGame(hostId);
               setAttemptingConnection(true);
@@ -143,7 +145,7 @@ const App = () => {
           >
             Join Game
           </button>
-          <input type='text' value={hostId} onChange={ev => setHostId(ev.target.value)} />
+          <input id='host-id' type='text' value={hostId} onChange={ev => setHostId(ev.target.value)} />
           <button onClick={() => navigator.clipboard.writeText(hostId)}>copy</button>
 
         </div>
