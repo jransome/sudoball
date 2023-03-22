@@ -1,7 +1,7 @@
 import { QueryDocumentSnapshot } from '@firebase/firestore-types';
-import { EventEmitter } from './Events';
+import { EventEmitter } from '../Events';
 import { db } from './firebase';
-import { TestClientPayload } from './types';
+import { TestClientPayload } from '../types';
 
 type ClientConnectionDoc = {
   offer: RTCSessionDescriptionInitSignal;

@@ -1,6 +1,6 @@
-import { EventEmitter } from './Events';
+import { EventEmitter } from '../Events';
 import { db } from './firebase';
-import { TestClientPayload } from './types';
+import { TestClientPayload } from '../types';
 
 type ConnectionClientEvents = {
   hostClosed: () => void;

@@ -1,30 +1,38 @@
 import { useRef, useEffect } from 'react';
+import { GameObjects, Vector2 } from './types';
 
 const CANVAS_SHARPNESS_FACTOR = 3;
 
-const PitchRenderer = ({ gameObjects }) => {
+type Props = {
+  canvasDimensions: Vector2;
+  gameObjects: GameObjects;
+}
+
+const PitchRenderer = ({ canvasDimensions, gameObjects }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasContextRef = useRef<CanvasRenderingContext2D>(null);
+  const canvasContextRef = useRef<CanvasRenderingContext2D | null>(null);
 
   useEffect(() => {
-    // console.log('setting up canvas')
-    canvasContextRef.current = canvasRef.current.getContext('2d');
-    canvasContextRef.current.scale(CANVAS_SHARPNESS_FACTOR, CANVAS_SHARPNESS_FACTOR);
+    console.log('INIT canvas');
+
+    canvasContextRef.current = canvasRef.current!.getContext('2d');
+    canvasContextRef.current!.scale(CANVAS_SHARPNESS_FACTOR, CANVAS_SHARPNESS_FACTOR);
   }, []);
 
   useEffect(() => {
-    // console.log('drawing on canvas')
-    const ctx = canvasContextRef.current;
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    // console.log('drawing on canvas');
+    const ctx = canvasContextRef.current!;
+    ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
 
     if (!gameObjects) {
       ctx.fillText('Nothing to render', 10, 50);
       return;
     }
 
-    drawCircle(gameObjects.ball, 'orange', ctx);
+    drawCircle(gameObjects.player, 'orange', ctx);
     // gameObjects.players.forEach(p => drawCircle(p, 'blue', ctx));
-    // gameObjects.boundaries.forEach(b => drawPolygon(b, 'black', ctx));
+    gameObjects.boundaries.forEach(b => drawPolygon(b, 'black', ctx));
+    gameObjects.boxes.forEach(b => drawPolygon(b, 'blue', ctx));
 
   }, [canvasContextRef, gameObjects]);
 
@@ -48,11 +56,11 @@ const PitchRenderer = ({ gameObjects }) => {
   return (
     <canvas
       ref={canvasRef}
-      width={window.innerWidth * CANVAS_SHARPNESS_FACTOR}
-      height={window.innerHeight * CANVAS_SHARPNESS_FACTOR}
+      width={canvasDimensions.x * CANVAS_SHARPNESS_FACTOR}
+      height={canvasDimensions.y * CANVAS_SHARPNESS_FACTOR}
       style={{
-        width: `${window.innerWidth}px`,
-        height: `${window.innerHeight}px`,
+        width: `${canvasDimensions.x}px`,
+        height: `${canvasDimensions.y}px`,
       }}
     />
   );

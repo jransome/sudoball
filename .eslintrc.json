@@ -19,6 +19,20 @@
 		"@typescript-eslint"
 	],
 	"rules": {
+		"@typescript-eslint/no-non-null-assertion": "off",
+		"@typescript-eslint/member-delimiter-style": [
+			"error",
+			{
+				"multiline": {
+					"delimiter": "semi",
+					"requireLast": true
+				},
+				"singleline": {
+					"delimiter": "semi",
+					"requireLast": true
+				}
+			}
+		],
 		"react/jsx-uses-react": "off",
 		"react/react-in-jsx-scope": "off",
 		"comma-dangle": [
