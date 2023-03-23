@@ -3,7 +3,6 @@ import Matter, {
   Body,
   Composite,
   Engine,
-  Vector,
 } from 'matter-js';
 import { EventEmitter } from './Events';
 import { GameObjects, Vector2 } from './types';

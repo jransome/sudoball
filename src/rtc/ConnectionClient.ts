@@ -44,18 +44,17 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
     this.sendChannel.onclose = () => console.log('send channel closed');
     this.sendChannel.onerror = error => console.error('send channel error:', error);
 
-    let receiveChannel = null;
     this.peerConnection.ondatachannel = (ev) => {
-      receiveChannel = ev.channel;
+      const receiveChannel = ev.channel;
       receiveChannel.onopen = () => console.log('receive channel opened');
       receiveChannel.onclose = () => {
-        console.log('receive channel closed');
-        this.emit('hostClosed'); // TODO: some boolean that prevents use if connection drops
+        console.log('receive channel closed (host disconnected)');
+        this.disconnect();
+        this.emit('hostClosed');
       };
       receiveChannel.onmessage = event => this.emit('messageReceived', JSON.parse(event.data));
       receiveChannel.onerror = error => console.error('receive channel error:', error);
     };
-
 
 
 
@@ -65,7 +64,6 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
     const iceAnswerCandidates = connectionOfferDoc.collection('iceAnswerCandidates');
 
     this.peerConnection.onicecandidate = ({ candidate }) => {
-      candidate && console.log('generated new ice candidate');
       candidate && iceOfferCandidates.add(candidate.toJSON());
     };
     const offerDescription = await this.peerConnection.createOffer();
@@ -77,7 +75,6 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
         type: offerDescription.type,
       },
     });
-    console.log('set offer');
 
     // Listen for remote answer
     connectionOfferDoc.onSnapshot((snapshot) => {

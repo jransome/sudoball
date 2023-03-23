@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
 import { ConnectionClient } from './rtc/ConnectionClient';
 import { ConnectionHost } from './rtc/ConnectionHost';
 import PitchRenderer from './PitchRenderer';
 import { GameEngine } from './GameEngine';
 import { GameObjects, Vector2 } from './types';
-import { getPlayerInput } from './keyboardInput';
+import { getMovementInput } from './controls';
 
 const useStyles = createUseStyles({
   app: {
@@ -51,7 +51,7 @@ const App = () => {
     const gameEngine = new GameEngine(CANVAS_DIMENSIONS, FRAMERATE_HZ);
     gameEngine.start();
     gameEngine.on('update', (gameState, sendInputs) => {
-      sendInputs(getPlayerInput());
+      sendInputs(getMovementInput());
       host.broadcast(gameState);
       setGameObjects(gameState); // set some rendering component's state
     });
@@ -73,6 +73,7 @@ const App = () => {
       setClients(prev => new Set([...prev, id]));
     });
     host.on('clientDisconnected', (id) => {
+      console.log('client disconnected', id);
       setClients(prev => new Set(prev.add(id)));
       setClients((prev) => {
         prev.delete(id);

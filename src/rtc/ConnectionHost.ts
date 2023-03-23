@@ -14,7 +14,7 @@ type RTCSessionDescriptionInitSignal = {
 }
 
 type OutboundChannel = {
-  close: () => void;
+  closePeerConnection: () => void;
   channel: RTCDataChannel;
 }
 
@@ -53,7 +53,7 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
 
   public close() {
     // TODO: some boolean that prevents use if closed
-    this.outboundChannels.forEach(c => c.close());
+    this.outboundChannels.forEach(c => c.closePeerConnection());
     this.outboundChannels.clear();
   }
 
@@ -78,7 +78,7 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
     sendChannel.onopen = () => {
       console.log('send channel opened');
       this.outboundChannels.set(clientId, {
-        close: () => peerConnection.close(),
+        closePeerConnection: () => peerConnection.close(),
         channel: sendChannel,
       });
       this.emit('clientConnected', clientId);
@@ -86,13 +86,14 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
     sendChannel.onclose = () => console.log('send channel closed');
     sendChannel.onerror = error => console.error('send channel error:', error);
 
-    let receiveChannel = null;
     peerConnection.ondatachannel = (ev) => {
-      receiveChannel = ev.channel;
+      const receiveChannel = ev.channel;
       receiveChannel.onopen = () => console.log('receive channel opened');
       receiveChannel.onclose = () => {
-        console.log('receive channel closed');
+        console.log('receive channel closed for client', clientId);
         if (!this.outboundChannels.has(clientId)) console.error('client disconnected but channel not in memory');
+        
+        this.outboundChannels.get(clientId)?.closePeerConnection();
         this.outboundChannels.delete(clientId);
         this.emit('clientDisconnected', clientId);
       };
@@ -104,7 +105,6 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
     const iceOfferCandidates = clientConnectionDocSnapshot.ref.collection('iceOfferCandidates');
     const iceAnswerCandidates = clientConnectionDocSnapshot.ref.collection('iceAnswerCandidates');
     peerConnection.onicecandidate = ({ candidate }) => {
-      candidate && console.log('generated new ice candidate');
       candidate && iceAnswerCandidates.add(candidate.toJSON());
     };
 
