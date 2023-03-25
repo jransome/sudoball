@@ -1,6 +1,21 @@
-export type TestClientPayload = {
-  message: string;
+// export type RTCPayloadType = 'GAME_UPDATE' | 'CLIENT_INPUT'
+
+// export type RTCPayload = {
+//   type: string;
+//   payload: object;
+// }
+
+export type RTCGameUpdate = {
+  type: 'GAME_UPDATE';
+  payload: GameObjects;
 }
+
+export type RTCClientInput = {
+  type: 'CLIENT_INPUT';
+  payload: Vector2;
+}
+
+export type ClientId = string;
 
 export type Vector2 = {
   x: number;
@@ -20,4 +35,9 @@ export type GameObjects = {
   // players: Circle[];
   boxes: Polygon[];
   player: Circle;
+}
+
+export type CanvasReference = {
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
 }

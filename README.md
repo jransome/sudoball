@@ -1,0 +1,36 @@
+# Sudoball
+
+## Plan
+- [x] sending json over RTCDataChannel
+- [x] rendering game using canvas and physics
+- [x] sending gamestate over 1 RTC (unidirectional)
+- [x] connecting > 2 players in one session
+- [x] sending gamestate to all players
+- [x] sending/collecting client inputs to update game state
+- [ ] allowing clients to control independent player objects
+- [ ] game
+    - [ ] handling client drop out
+    - [ ] handling host drop out
+    - [ ] mechanics
+        - [ ] starting the game
+        - [ ] ability to kick the ball
+        - [ ] goal detection
+        - [ ] reset positions after goal
+        - [ ] player stats - touches, goals, saves?
+        - [ ] ending the match on time/goal limit
+    - [ ] ui
+        - [ ] make it look like a football pitch
+        - [ ] kick range indicator
+        - [ ] game clock
+        - [ ] goals scored
+        - [ ] render player names under avatar
+        - [ ] player avatars?
+        - [ ] sfx on kick/scoring
+        - [ ] game summary on match end
+- [ ] game setup
+    - [ ] allowing players to choose teams
+    - [ ] team randomiser
+    - [ ] max number of goals
+    - [ ] match time limit
+    - [ ] handling client drop out
+    - [ ] handling host drop out

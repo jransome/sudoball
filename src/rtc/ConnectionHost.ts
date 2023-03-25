@@ -1,7 +1,7 @@
 import { QueryDocumentSnapshot } from '@firebase/firestore-types';
 import { EventEmitter } from '../Events';
 import { db } from './firebase';
-import { TestClientPayload } from '../types';
+import { ClientId, RTCClientInput, RTCGameUpdate } from '../types';
 
 type ClientConnectionDoc = {
   offer: RTCSessionDescriptionInitSignal;
@@ -21,20 +21,20 @@ type OutboundChannel = {
 type ConnectionHostEvents = {
   clientConnected: (clientId: string) => void;
   clientDisconnected: (clientId: string) => void;
-  messageReceived: (clientId: string, data: TestClientPayload) => void;
+  message: (clientId: string, message: RTCClientInput) => void;
 }
 
 export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
   hostId: string;
-  private outboundChannels: Map<string, OutboundChannel> = new Map();
+  private outboundChannels: Map<ClientId, OutboundChannel> = new Map();
 
   constructor() {
     super();
     this.hostId = crypto.randomUUID();
   }
 
-  public get clientCount() {
-    return this.outboundChannels.size;
+  public get clients() {
+    return [...this.outboundChannels.keys()];
   }
 
   public startHosting() {
@@ -47,8 +47,8 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
     });
   }
 
-  public broadcast(data: object) {
-    this.outboundChannels.forEach(c => c.channel.send(JSON.stringify(data))); // TODO cache as array?
+  public broadcast(message: RTCGameUpdate) {
+    this.outboundChannels.forEach(c => c.channel.send(JSON.stringify(message))); // TODO cache as array?
   }
 
   public close() {
@@ -97,7 +97,7 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
         this.outboundChannels.delete(clientId);
         this.emit('clientDisconnected', clientId);
       };
-      receiveChannel.onmessage = event => this.emit('messageReceived', clientId, JSON.parse(event.data));
+      receiveChannel.onmessage = event => this.emit('message', clientId, JSON.parse(event.data));
       receiveChannel.onerror = error => console.error('receive channel error:', error);
     };
 
