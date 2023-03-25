@@ -12,10 +12,15 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
   private peerConnection!: RTCPeerConnection;
   private sendChannel!: RTCDataChannel;
   private connectionEstablished!: Promise<void>;
+  private isConnected = false;
 
   constructor() {
     super();
     this.clientId = crypto.randomUUID();
+  }
+
+  get connected() {
+    return this.isConnected;
   }
 
   public async connectToHost(hostId: string) {
@@ -97,6 +102,7 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
     });
 
     await this.connectionEstablished;
+    this.isConnected = true;
   }
 
   public async sendToHost(message: RTCClientInput) {
@@ -106,5 +112,6 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
 
   public disconnect() {
     this.peerConnection.close();
+    this.isConnected = true;
   }
 }

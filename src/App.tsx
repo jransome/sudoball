@@ -89,18 +89,14 @@ const startEngine = (host: ConnectionHost, canvasRefs: CanvasReference) => {
 const App = () => {
   const classes = useStyles();
 
-  const [isClientAndConnected, setIsClientAndConnected] = useState(false);
   const [hostId, setHostId] = useState('');
-
+  const [getConnectedState, setGetConnectedState] = useState<() => boolean>(() => () => false);
   const [clients, setClients] = useState<string[]>([]);
-  const [connHost, setConnHost] = useState<ConnectionHost>();
-  const [connClient, setConnClient] = useState<ConnectionClient>();
   const [canvasRefs, setCanvasRefs] = useState<CanvasReference>();
 
   const createGame = () => {
     const host = new ConnectionHost();
     setHostId(host.hostId);
-    host.startHosting();
     host.on('clientConnected', (id) => {
       setClients(host.clients);
     });
@@ -110,7 +106,7 @@ const App = () => {
     });
 
     host.on('message', (clientId: ClientId, message: RTCClientInput) => {
-      console.log('message from:', clientId, message);
+      // console.log('message from:', clientId, message);
       clientInputs.testInput = message.payload;
       // setClientInputs(prev => ({ ...prev, testClient: data.input }));
       // setReceivedMessages(prev => [...prev, [clientId, data.message]]);
@@ -120,43 +116,40 @@ const App = () => {
     });
 
     startEngine(host, canvasRefs!);
-
-    setConnHost(host);
+    host.startHosting();
+    setGetConnectedState(() => () => host.clients.length > 0);
   };
 
   const joinGame = async (hostId: string) => {
     const client = new ConnectionClient();
-    await client.connectToHost(hostId);
-    setConnClient(client);
-    setIsClientAndConnected(true);
     client.on('message', (message: RTCGameUpdate) => {
       // get player input and send it back to keep in lock step with engine frame rate
-      client.sendToHost({ type:'CLIENT_INPUT', payload: getMovementInput() });
+      client.sendToHost({ type: 'CLIENT_INPUT', payload: getMovementInput() });
       draw(canvasRefs!, message.payload);
     });
+    await client.connectToHost(hostId);
+    setGetConnectedState(() => () => client.connected);
   };
-
-  const isConnected = () => isClientAndConnected || !!clients.length;
 
   return (
     <div className={classes.app}>
       <h1>Sudoball</h1>
 
       <div>
-        <h3 className={isConnected() ? classes.connected : classes.disconnected}>
-          {isConnected() ? 'Channel Open' : 'Disconnected'}
+        <h3 className={getConnectedState() ? classes.connected : classes.disconnected}>
+          {getConnectedState() ? 'Channel Open' : 'Disconnected'}
         </h3>
         <div>
           <button
             onClick={() => createGame()}
-            disabled={!!connClient || !!connHost || isConnected()}
+            disabled={getConnectedState()}
           >
             Create Game
           </button>
 
           <button
             onClick={() => joinGame(hostId)}
-            disabled={!hostId || !!connClient || !!connHost || isConnected()}
+            disabled={!hostId || getConnectedState()}
           >
             Join Game
           </button>
@@ -168,7 +161,7 @@ const App = () => {
         <h4>Connected to:</h4>
         <ul>
           {clients.map((c, i) => <li key={i}>{c}</li>)}
-          {connClient && <li>host</li>}
+          {getConnectedState() && !clients.length && <li>host</li>}
         </ul>
       </div>
       <Canvas

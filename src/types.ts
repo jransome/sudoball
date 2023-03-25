@@ -1,16 +1,16 @@
-// export type RTCPayloadType = 'GAME_UPDATE' | 'CLIENT_INPUT'
+export type RTCMessageType = 'GAME_UPDATE' | 'CLIENT_INPUT'
 
-// export type RTCPayload = {
-//   type: string;
-//   payload: object;
-// }
+export type RTCMessage = {
+  type: RTCMessageType;
+  payload: object;
+}
 
-export type RTCGameUpdate = {
+export interface RTCGameUpdate extends RTCMessage {
   type: 'GAME_UPDATE';
   payload: GameObjects;
 }
 
-export type RTCClientInput = {
+export interface RTCClientInput extends RTCMessage {
   type: 'CLIENT_INPUT';
   payload: Vector2;
 }
