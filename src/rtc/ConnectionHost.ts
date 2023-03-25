@@ -1,7 +1,7 @@
 import { QueryDocumentSnapshot } from '@firebase/firestore-types';
 import { EventEmitter } from '../Events';
 import { db } from './firebase';
-import { ClientId, RTCClientInput, RTCGameUpdate } from '../types';
+import { PeerId, RTCClientInput, RTCGameUpdate } from '../types';
 
 type ClientConnectionDoc = {
   offer: RTCSessionDescriptionInitSignal;
@@ -25,12 +25,12 @@ type ConnectionHostEvents = {
 }
 
 export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
-  hostId: string;
-  private outboundChannels: Map<ClientId, OutboundChannel> = new Map();
+  peerId: PeerId;
+  private outboundChannels: Map<PeerId, OutboundChannel> = new Map();
 
   constructor() {
     super();
-    this.hostId = crypto.randomUUID();
+    this.peerId = crypto.randomUUID();
   }
 
   public get clients() {
@@ -38,7 +38,7 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
   }
 
   public startHosting() {
-    const sessionDoc = db.collection('session').doc(this.hostId);
+    const sessionDoc = db.collection('session').doc(this.peerId);
     const clientConnections = sessionDoc.collection('clientConnections');
     clientConnections.onSnapshot((snapshot) => {
       snapshot.docChanges()

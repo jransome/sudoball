@@ -6,7 +6,7 @@ import { ConnectionHost } from './rtc/ConnectionHost';
 import Canvas from './Canvas';
 import { GameEngine } from './GameEngine';
 import { getMovementInput } from './controls';
-import { CanvasReference, ClientId, GameObjects, RTCClientInput, RTCGameUpdate, Vector2 } from './types';
+import { CanvasReference, PeerId, GameObjects, RTCClientInput, RTCGameUpdate, PlayerInputs } from './types';
 
 const useStyles = createUseStyles({
   app: {
@@ -21,12 +21,7 @@ const useStyles = createUseStyles({
 });
 
 
-
-const clientInputs: {
-  testInput: Vector2;
-} = {
-  testInput: { x: 0, y: 0 },
-};
+const clientInputs: PlayerInputs = {}; 
 
 
 const drawPolygon = (vertices, fillColour, ctx) => {
@@ -54,20 +49,21 @@ const draw = ({ canvas, context: ctx }: CanvasReference, gameObjects: GameObject
     return;
   }
 
-  drawCircle(gameObjects.player, 'orange', ctx);
-  // gameObjects.players.forEach(p => drawCircle(p, 'blue', ctx));
+  gameObjects.players.forEach(p => drawCircle(p, 'coral', ctx));
   gameObjects.boundaries.forEach(b => drawPolygon(b, 'black', ctx));
   gameObjects.boxes.forEach(b => drawPolygon(b, 'blue', ctx));
-}
-
+};
 
 const startEngine = (host: ConnectionHost, canvasRefs: CanvasReference) => {
   console.log('started engine');
   const gameEngine = new GameEngine(CANVAS_DIMENSIONS, FRAMERATE_HZ);
 
-  gameEngine.on('update', (gameObjects, sendInputs) => {
-    sendInputs(getMovementInput());
-    clientInputs.testInput && sendInputs(clientInputs.testInput);
+  gameEngine.on('update', (gameObjects, applyInputs) => {
+    applyInputs({
+      ...clientInputs,
+      [host.peerId]: getMovementInput(),
+    });
+    // clientInputs.testInput && applyInputs(clientInputs.testInput);
 
     host.broadcast({ type: 'GAME_UPDATE', payload: gameObjects });
     draw(canvasRefs, gameObjects);
@@ -82,8 +78,9 @@ const startEngine = (host: ConnectionHost, canvasRefs: CanvasReference) => {
     */
   });
 
-  console.log('starting game engine...');
+  gameEngine.addPlayer(host.peerId);
   gameEngine.start();
+  return gameEngine;
 };
 
 const App = () => {
@@ -96,27 +93,28 @@ const App = () => {
 
   const createGame = () => {
     const host = new ConnectionHost();
-    setHostId(host.hostId);
+    const engine = startEngine(host, canvasRefs!);
+
     host.on('clientConnected', (id) => {
       setClients(host.clients);
-    });
-    host.on('clientDisconnected', (id) => {
-      console.log('client disconnected', id);
-      setClients(host.clients);
+      engine.addPlayer(id);
     });
 
-    host.on('message', (clientId: ClientId, message: RTCClientInput) => {
-      // console.log('message from:', clientId, message);
-      clientInputs.testInput = message.payload;
-      // setClientInputs(prev => ({ ...prev, testClient: data.input }));
-      // setReceivedMessages(prev => [...prev, [clientId, data.message]]);
+    host.on('clientDisconnected', (id) => {
+      setClients(host.clients);
+      engine.removePlayer(id);
+    });
+
+    host.on('message', (clientId: PeerId, message: RTCClientInput) => {
+      // TODO: what if client isn't registered?!
+      clientInputs[clientId] = message.payload;
 
       // gets player inputs and 'queue'(?) them for inputting to the engine
-
     });
 
-    startEngine(host, canvasRefs!);
     host.startHosting();
+
+    setHostId(host.peerId);
     setGetConnectedState(() => () => host.clients.length > 0);
   };
 

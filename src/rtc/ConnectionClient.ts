@@ -1,5 +1,5 @@
 import { EventEmitter } from '../Events';
-import { RTCClientInput, RTCGameUpdate } from '../types';
+import { PeerId, RTCClientInput, RTCGameUpdate } from '../types';
 import { db } from './firebase';
 
 type ConnectionClientEvents = {
@@ -8,7 +8,7 @@ type ConnectionClientEvents = {
 }
 
 export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
-  clientId: string;
+  peerId: PeerId;
   private peerConnection!: RTCPeerConnection;
   private sendChannel!: RTCDataChannel;
   private connectionEstablished!: Promise<void>;
@@ -16,7 +16,7 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
 
   constructor() {
     super();
-    this.clientId = crypto.randomUUID();
+    this.peerId = crypto.randomUUID();
   }
 
   get connected() {
@@ -64,7 +64,7 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
 
 
     const sessionDoc = db.collection('session').doc(hostId);
-    const connectionOfferDoc = sessionDoc.collection('clientConnections').doc(this.clientId);
+    const connectionOfferDoc = sessionDoc.collection('clientConnections').doc(this.peerId);
     const iceOfferCandidates = connectionOfferDoc.collection('iceOfferCandidates');
     const iceAnswerCandidates = connectionOfferDoc.collection('iceAnswerCandidates');
 

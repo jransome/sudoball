@@ -7,7 +7,7 @@
 - [x] connecting > 2 players in one session
 - [x] sending gamestate to all players
 - [x] sending/collecting client inputs to update game state
-- [ ] allowing clients to control independent player objects
+- [x] allowing clients to control independent player objects
 - [ ] game
     - [ ] handling client drop out
     - [ ] handling host drop out

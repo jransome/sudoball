@@ -15,7 +15,7 @@ export interface RTCClientInput extends RTCMessage {
   payload: Vector2;
 }
 
-export type ClientId = string;
+export type PeerId = string; // unique identifier for each rtc (player) connection
 
 export type Vector2 = {
   x: number;
@@ -24,7 +24,8 @@ export type Vector2 = {
 
 export type Polygon = Vector2[];
 
-export type Circle = {
+export type PlayerState = {
+  id: PeerId;
   position: Vector2;
   radius: number;
 }
@@ -34,10 +35,14 @@ export type GameObjects = {
   // ball: Circle;
   // players: Circle[];
   boxes: Polygon[];
-  player: Circle;
+  players: PlayerState[];
 }
 
 export type CanvasReference = {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
+}
+
+export type PlayerInputs = {
+  [k in PeerId]: Vector2;
 }
