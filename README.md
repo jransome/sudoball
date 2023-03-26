@@ -13,6 +13,7 @@
 - [ ] game
     - [ ] handling client drop out
     - [ ] handling host drop out
+    - [ ] spectating
     - [ ] mechanics
         - [ ] starting the game
         - [ ] ability to kick the ball

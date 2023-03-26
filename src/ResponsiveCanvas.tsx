@@ -1,20 +1,20 @@
 import { useRef, useEffect } from 'react';
+import { CanvasPainter } from './CanvasPainter';
 import { CANVAS_SHARPNESS_FACTOR } from './config';
 import { Vector2 } from './types';
 
 type Props = {
   gameDimensions: Vector2;
-  setReference: (canvasReferences: CanvasRenderingContext2D) => void;
 }
 
-export const ResponsiveCanvas = ({ gameDimensions, setReference }: Props) => {
+export const ResponsiveCanvas = ({ gameDimensions }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   useEffect(() => {
     const aspectRatio = gameDimensions.x / gameDimensions.y;
     const canvas = canvasRef.current!;
     const context = canvas.getContext('2d', { alpha: false })!;
-    setReference(context);
+    CanvasPainter.setContext(context);
 
     /**
      * canvas.width/height sets the dimensions of the renderable pixels, not the 
