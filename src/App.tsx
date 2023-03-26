@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { FRAMERATE_HZ, CANVAS_DIMENSIONS } from './config';
+import { FRAMERATE_HZ, GAME_DIMENSIONS } from './config';
 import { ConnectionClient } from './rtc/ConnectionClient';
 import { ConnectionHost } from './rtc/ConnectionHost';
-import Canvas from './Canvas';
+import { ResponsiveCanvas } from './ResponsiveCanvas';
 import { GameEngine } from './GameEngine';
 import { getMovementInput } from './controls';
-import { CanvasReference, PeerId, GameObjects, RTCClientInput, RTCGameUpdate, PlayerInputs } from './types';
+import { PeerId, GameObjects, RTCClientInput, RTCGameUpdate, PlayerInputs } from './types';
 
 const useStyles = createUseStyles({
-  app: {
+  appUi: {
     margin: '0px 30px',
   },
   connected: {
@@ -21,7 +21,7 @@ const useStyles = createUseStyles({
 });
 
 
-const clientInputs: PlayerInputs = {}; 
+const clientInputs: PlayerInputs = {};
 
 
 const drawPolygon = (vertices, fillColour, ctx) => {
@@ -41,8 +41,8 @@ const drawCircle = ({ position, radius }, fillColour, ctx) => {
   ctx.stroke();
 };
 
-const draw = ({ canvas, context: ctx }: CanvasReference, gameObjects: GameObjects) => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+const draw = (ctx: CanvasRenderingContext2D, gameObjects: GameObjects) => {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
   if (!gameObjects) {
     ctx.fillText('Nothing to render', 10, 50);
@@ -54,9 +54,9 @@ const draw = ({ canvas, context: ctx }: CanvasReference, gameObjects: GameObject
   gameObjects.boxes.forEach(b => drawPolygon(b, 'blue', ctx));
 };
 
-const startEngine = (host: ConnectionHost, canvasRefs: CanvasReference) => {
+const startEngine = (host: ConnectionHost, canvasContext: CanvasRenderingContext2D) => {
   console.log('started engine');
-  const gameEngine = new GameEngine(CANVAS_DIMENSIONS, FRAMERATE_HZ);
+  const gameEngine = new GameEngine(GAME_DIMENSIONS, FRAMERATE_HZ);
 
   gameEngine.on('update', (gameObjects, applyInputs) => {
     applyInputs({
@@ -66,7 +66,7 @@ const startEngine = (host: ConnectionHost, canvasRefs: CanvasReference) => {
     // clientInputs.testInput && applyInputs(clientInputs.testInput);
 
     host.broadcast({ type: 'GAME_UPDATE', payload: gameObjects });
-    draw(canvasRefs, gameObjects);
+    draw(canvasContext, gameObjects);
   });
 
   gameEngine.on('gameEvent', (gameEvent) => {
@@ -89,11 +89,11 @@ const App = () => {
   const [hostId, setHostId] = useState('');
   const [getConnectedState, setGetConnectedState] = useState<() => boolean>(() => () => false);
   const [clients, setClients] = useState<string[]>([]);
-  const [canvasRefs, setCanvasRefs] = useState<CanvasReference>();
+  const [canvasContext, setCanvasContext] = useState<CanvasRenderingContext2D>();
 
   const createGame = () => {
     const host = new ConnectionHost();
-    const engine = startEngine(host, canvasRefs!);
+    const engine = startEngine(host, canvasContext!);
 
     host.on('clientConnected', (id) => {
       setClients(host.clients);
@@ -123,17 +123,16 @@ const App = () => {
     client.on('message', (message: RTCGameUpdate) => {
       // get player input and send it back to keep in lock step with engine frame rate
       client.sendToHost({ type: 'CLIENT_INPUT', payload: getMovementInput() });
-      draw(canvasRefs!, message.payload);
+      draw(canvasContext!, message.payload);
     });
     await client.connectToHost(hostId);
     setGetConnectedState(() => () => client.connected);
   };
 
   return (
-    <div className={classes.app}>
-      <h1>Sudoball</h1>
-
-      <div>
+    <>
+      <div className={classes.appUi}>
+        <h1>Sudoball</h1>
         <h3 className={getConnectedState() ? classes.connected : classes.disconnected}>
           {getConnectedState() ? 'Channel Open' : 'Disconnected'}
         </h3>
@@ -162,11 +161,11 @@ const App = () => {
           {getConnectedState() && !clients.length && <li>host</li>}
         </ul>
       </div>
-      <Canvas
-        canvasDimensions={CANVAS_DIMENSIONS}
-        setReferences={setCanvasRefs}
+      <ResponsiveCanvas
+        gameDimensions={GAME_DIMENSIONS}
+        setReference={setCanvasContext}
       />
-    </div>
+    </>
   );
 };
 

@@ -17,20 +17,20 @@ export class GameEngine extends EventEmitter<GameEngineEvents> {
   private tickPeriod: number;
   private gameIntervalId!: number;
   private players: Map<PeerId, Matter.Body> = new Map();
-  private canvasDimensions: Vector2;
+  private gameDimensions: Vector2;
   private engine!: Matter.Engine;
 
-  constructor(canvasDimensions: Vector2, frameRateHz: number) {
+  constructor(gameDimensions: Vector2, frameRateHz: number) {
     super();
-    this.canvasDimensions = canvasDimensions;
+    this.gameDimensions = gameDimensions;
     this.tickPeriod = 1000 / frameRateHz;
     this.engine = Matter.Engine.create();
     this.engine.gravity.scale = 0;
   }
 
   public start() {
-    const boundaries = createBoundaries(this.canvasDimensions);
-    const boxes = createBoxes(this.canvasDimensions);
+    const boundaries = createBoundaries(this.gameDimensions);
+    const boxes = createBoxes(this.gameDimensions);
     Matter.Composite.add(this.engine.world, [
       ...boundaries,
       ...boxes,
@@ -82,39 +82,39 @@ export class GameEngine extends EventEmitter<GameEngineEvents> {
   }
 }
 
-const createBoundaries = (canvasDimensions: Vector2, wallThickness = 20) => [
+const createBoundaries = (gameDimensions: Vector2, wallThickness = 20) => [
   Matter.Bodies.rectangle(
-    canvasDimensions.x / 2, 0,
-    canvasDimensions.x,
+    gameDimensions.x / 2, 0,
+    gameDimensions.x,
     wallThickness,
     { isStatic: true },
   ),
   Matter.Bodies.rectangle(
-    0, canvasDimensions.y / 2,
+    0, gameDimensions.y / 2,
     wallThickness,
-    canvasDimensions.y,
+    gameDimensions.y,
     { isStatic: true },
   ),
   Matter.Bodies.rectangle(
-    canvasDimensions.x,
-    canvasDimensions.x / 2,
+    gameDimensions.x,
+    gameDimensions.x / 2,
     wallThickness,
-    canvasDimensions.x,
+    gameDimensions.x,
     { isStatic: true },
   ),
   Matter.Bodies.rectangle(
-    canvasDimensions.x / 2,
-    canvasDimensions.y,
-    canvasDimensions.x,
+    gameDimensions.x / 2,
+    gameDimensions.y,
+    gameDimensions.x,
     wallThickness,
     { isStatic: true },
   ),
 ];
 
-const createBoxes = (canvasDimensions: Vector2, number = 40, size = 20) => [...Array(number)].map(() =>
+const createBoxes = (gameDimensions: Vector2, number = 40, size = 20) => [...Array(number)].map(() =>
   Matter.Bodies.rectangle(
-    Math.random() * canvasDimensions.x,
-    Math.random() * canvasDimensions.y,
+    Math.random() * gameDimensions.x,
+    Math.random() * gameDimensions.y,
     Math.random() * size + size,
     Math.random() * size + size,
   ),

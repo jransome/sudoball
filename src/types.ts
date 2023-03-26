@@ -38,11 +38,6 @@ export type GameObjects = {
   players: PlayerState[];
 }
 
-export type CanvasReference = {
-  canvas: HTMLCanvasElement;
-  context: CanvasRenderingContext2D;
-}
-
 export type PlayerInputs = {
   [k in PeerId]: Vector2;
 }

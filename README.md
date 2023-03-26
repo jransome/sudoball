@@ -1,6 +1,7 @@
 # Sudoball
 
 ## Plan
+- [ ] think of better name
 - [x] sending json over RTCDataChannel
 - [x] rendering game using canvas and physics
 - [x] sending gamestate over 1 RTC (unidirectional)
@@ -8,6 +9,7 @@
 - [x] sending gamestate to all players
 - [x] sending/collecting client inputs to update game state
 - [x] allowing clients to control independent player objects
+- [x] scale canvas to browser size (independent of game)
 - [ ] game
     - [ ] handling client drop out
     - [ ] handling host drop out
