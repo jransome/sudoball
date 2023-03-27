@@ -1,9 +1,9 @@
 import { Team } from './config';
 import { GameEngine } from './game/GameEngine';
-import { PeerId, Participant, PlayerInputs } from './types';
+import { PeerId, Participant, Vector2 } from './types';
 
 let participants = new Map<PeerId, Participant>();
-const playerInputs: PlayerInputs = {};
+const playerInputs = new Map<PeerId, Vector2>();
 
 const add = (id: PeerId, team: Team) => {
   GameEngine.addPlayer(id);
@@ -16,14 +16,14 @@ const add = (id: PeerId, team: Team) => {
 const remove = (id: PeerId) => {
   GameEngine.removePlayer(id);
   participants.delete(id);
-  delete playerInputs[id];
+  playerInputs.delete(id);
 };
 
 const HostInterface = {
   add,
   remove,
   get participants() {
-    return [...participants];
+    return Array.from(participants);
   },
   get playerInputs() {
     return playerInputs;

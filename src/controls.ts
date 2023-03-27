@@ -29,7 +29,7 @@ document.addEventListener('keyup', (event) => {
   keyDownStates[event.key] = false;
 });
 
-export const getMovementInput = (): Vector2 => ({
+export const getLocalMovementInput = (): Vector2 => ({
   x: (Number(keyDownStates.ArrowLeft) * -1) + Number(keyDownStates.ArrowRight),
   y: (Number(keyDownStates.ArrowUp) * -1) + Number(keyDownStates.ArrowDown),
 });

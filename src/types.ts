@@ -43,8 +43,6 @@ export type BroadcastedGameState = {
   players: Player[];
 }
 
-export type PlayerInputs = Record<PeerId, Vector2>;
-
 export type Participant = {
   name: string;
   team: Team;

@@ -1,13 +1,13 @@
 import Matter from 'matter-js';
 import { PLAYER_SIZE, MOVE_FORCE, GAME_DIMENSIONS, FRAMERATE_HZ } from '../config';
 import { EventEmitter } from '../Events';
-import { PeerId, BroadcastedGameState, PlayerInputs } from '../types';
+import { PeerId, BroadcastedGameState, Vector2 } from '../types';
 import { createBoundaries, createBoxes, scaleVector2, serialiseVertices, serialisePlayers } from './helpers';
 
 type GameEngineEvents = {
   update: (
     gameState: BroadcastedGameState,
-    applyInputs: (inputs: PlayerInputs) => void,
+    applyInputs: (inputs: Map<PeerId, Vector2>) => void,
   ) => void;
   gameEvent: (eventName: string) => void;
 }
@@ -39,20 +39,22 @@ class Engine extends EventEmitter<GameEngineEvents> {
       ...boxes,
     ]);
 
-    const applyInputs = (inputs: PlayerInputs) => Object.entries(inputs).forEach(([playerId, inputVector]) => {
-      const playerBody = this.players.get(playerId);
-      if (!playerBody) {
-        console.error('received input for player that does not exist in game!', playerId);
-        return;
-      }
-      Matter.Body.applyForce(playerBody, playerBody.position, scaleVector2(inputVector, MOVE_FORCE));
-    });
+    const applyInputs = (inputs: Map<PeerId, Vector2>) => Array
+      .from(inputs)
+      .forEach(([playerId, inputVector]) => {
+        const playerBody = this.players.get(playerId);
+        if (!playerBody) {
+          console.error('received input for player that does not exist in game!', playerId);
+          return;
+        }
+        Matter.Body.applyForce(playerBody, playerBody.position, scaleVector2(inputVector, MOVE_FORCE));
+      });
 
     this.gameIntervalId = window.setInterval(() => {
       const gameState = {
         boundaries: boundaries.map(serialiseVertices),
         boxes: boxes.map(serialiseVertices),
-        players: [...this.players].map(serialisePlayers),
+        players: Array.from(this.players).map(serialisePlayers),
       };
 
       this.emit('update', gameState, applyInputs);
