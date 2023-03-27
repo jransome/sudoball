@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { FRAMERATE_HZ, GAME_DIMENSIONS, Team } from './config';
+import { GAME_DIMENSIONS, Team } from './config';
 import { ConnectionClient } from './rtc/ConnectionClient';
 import { ConnectionHost } from './rtc/ConnectionHost';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
-import { GameEngine } from './GameEngine';
+import { GameEngine } from './game/GameEngine';
 import { getMovementInput } from './controls';
-import { PeerId, PlayerInputs, RTCClientMessage, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
+import { PeerId, RTCClientInput, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
 import { CanvasPainter } from './CanvasPainter';
 import { ParticipantManager } from './ParticipantManager';
 
@@ -22,14 +22,11 @@ const useStyles = createUseStyles({
   },
 });
 
-const playerInputs: PlayerInputs = {};
 
 const startEngine = (host: ConnectionHost) => {
-  const gameEngine = new GameEngine(GAME_DIMENSIONS, FRAMERATE_HZ);
-
-  gameEngine.on('update', (gameState, applyInputs) => {
+  GameEngine.on('update', (gameState, applyInputs) => {
     applyInputs({
-      ...playerInputs,
+      ...ParticipantManager.HostInterface.playerInputs,
       [host.peerId]: getMovementInput(),
     });
 
@@ -37,7 +34,7 @@ const startEngine = (host: ConnectionHost) => {
     CanvasPainter.paint(gameState);
   });
 
-  // gameEngine.on('gameEvent', (gameEvent) => {
+  // GameEngine.on('gameEvent', (gameEvent) => {
   //   /**
   //    * any event that changes the ui, eg:
   //    * game started
@@ -50,9 +47,7 @@ const startEngine = (host: ConnectionHost) => {
     host.peerId,
     host.clients.length % 2 === 0 ? Team.Red : Team.Blue,
   );
-  gameEngine.addPlayer(host.peerId);
-  gameEngine.start();
-  return gameEngine;
+  GameEngine.start();
 };
 
 const App = () => {
@@ -65,7 +60,7 @@ const App = () => {
 
   const createGame = () => {
     const rtc = new ConnectionHost();
-    const engine = startEngine(rtc);
+    startEngine(rtc);
 
     rtc.on('clientConnected', (id) => {
       setClients(rtc.clients);
@@ -73,20 +68,17 @@ const App = () => {
         id,
         rtc.clients.length % 2 === 0 ? Team.Red : Team.Blue,
       );
-      engine.addPlayer(id);
       rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
     });
 
     rtc.on('clientDisconnected', (id) => {
       setClients(rtc.clients);
       ParticipantManager.HostInterface.remove(id);
-      delete playerInputs[id];
-      engine.removePlayer(id);
       rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
     });
 
-    rtc.on('clientMessage', (clientId: PeerId, message: RTCClientMessage) => {
-      playerInputs[clientId] = message.payload;
+    rtc.on('clientMessage', (clientId: PeerId, message: RTCClientInput) => {
+      ParticipantManager.HostInterface.playerInputs[clientId] = message.payload;
     });
 
     rtc.startHosting();
