@@ -22,7 +22,6 @@ const useStyles = createUseStyles({
   },
 });
 
-
 const startEngine = (host: ConnectionHost) => {
   GameEngine.on('update', (gameState, applyInputs) => {
     applyInputs({
@@ -54,7 +53,7 @@ const App = () => {
   const classes = useStyles();
 
   const [hostId, setHostId] = useState('');
-  const [getConnectedState, setGetConnectedState] = useState<() => boolean>(() => () => false);
+  const [isConnected, setIsConnected] = useState(false);
   const [attemptingConnection, setAttemptingConnection] = useState(false);
   const [clients, setClients] = useState<string[]>([]);
 
@@ -64,6 +63,7 @@ const App = () => {
 
     rtc.on('clientConnected', (id) => {
       setClients(rtc.clients);
+      setIsConnected(true);
       ParticipantManager.HostInterface.add(
         id,
         rtc.clients.length % 2 === 0 ? Team.Red : Team.Blue,
@@ -73,6 +73,7 @@ const App = () => {
 
     rtc.on('clientDisconnected', (id) => {
       setClients(rtc.clients);
+      setIsConnected(rtc.clients.length > 0);
       ParticipantManager.HostInterface.remove(id);
       rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
     });
@@ -84,7 +85,6 @@ const App = () => {
     rtc.startHosting();
 
     setHostId(rtc.peerId);
-    setGetConnectedState(() => () => rtc.clients.length > 0);
   };
 
   const joinGame = async (hostId: string) => {
@@ -112,16 +112,18 @@ const App = () => {
       }
       handler(message);
     });
+
+    rtc.on('hostClosed', () => setIsConnected(false));
     await rtc.connectToHost(hostId);
-    setGetConnectedState(() => () => rtc.connected);
+    setIsConnected(true);
   };
 
   return (
     <>
       <div className={classes.appUi}>
         <h1>Sudoball</h1>
-        <h3 className={getConnectedState() ? classes.connected : classes.disconnected}>
-          {getConnectedState() ? 'Channel Open' : 'Disconnected'}
+        <h3 className={isConnected ? classes.connected : classes.disconnected}>
+          {isConnected ? 'Channel Open' : 'Disconnected'}
         </h3>
         <div>
           <button
@@ -129,7 +131,7 @@ const App = () => {
               createGame();
               setAttemptingConnection(true);
             }}
-            disabled={!!hostId || attemptingConnection || getConnectedState()}
+            disabled={!!hostId || attemptingConnection || isConnected}
           >
             Create Game
           </button>
@@ -139,7 +141,7 @@ const App = () => {
               joinGame(hostId);
               setAttemptingConnection(true);
             }}
-            disabled={!hostId || attemptingConnection || getConnectedState()}
+            disabled={!hostId || attemptingConnection || isConnected}
           >
             Join Game
           </button>
@@ -151,7 +153,7 @@ const App = () => {
         <h4>Connected to:</h4>
         <ul>
           {clients.map((c, i) => <li key={i}>{c}</li>)}
-          {getConnectedState() && !clients.length && <li>host</li>}
+          {isConnected && !clients.length && <li>host</li>}
         </ul>
       </div>
       <ResponsiveCanvas gameDimensions={GAME_DIMENSIONS} />
