@@ -10,10 +10,19 @@
 - [x] sending/collecting client inputs to update game state
 - [x] allowing clients to control independent player objects
 - [x] scale canvas to browser size (independent of game)
+- [ ] game setup
+    - [ ] join via url
+    - [ ] allow players to choose name
+    - [ ] allow players to choose team
+    - [ ] team randomiser
+    - [ ] set max number of goals
+    - [ ] set match time limit
+    - [ ] handling client drop out
+    - [ ] handling host drop out
 - [ ] game
     - [ ] handling client drop out
     - [ ] handling host drop out
-    - [ ] spectating
+    - [ ] spectating?
     - [ ] mechanics
         - [ ] starting the game
         - [ ] ability to kick the ball
@@ -23,17 +32,10 @@
         - [ ] ending the match on time/goal limit
     - [ ] ui
         - [ ] make it look like a football pitch
-        - [ ] kick range indicator
+        - [ ] kick radius indicator
         - [ ] game clock
         - [ ] goals scored
-        - [ ] render player names under avatar
-        - [ ] player avatars?
+        - [x] render player names under avatar
+        - [ ] meme avatars
         - [ ] sfx on kick/scoring
         - [ ] game summary on match end
-- [ ] game setup
-    - [ ] allowing players to choose teams
-    - [ ] team randomiser
-    - [ ] max number of goals
-    - [ ] match time limit
-    - [ ] handling client drop out
-    - [ ] handling host drop out

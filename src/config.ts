@@ -12,3 +12,9 @@ export const GAME_DIMENSIONS: Vector2 = {
 export const PLAYER_SIZE = 20;
 
 export const MOVE_FORCE = 0.001;
+
+export enum Team {
+  // Spectator,
+  Red,
+  Blue,
+}

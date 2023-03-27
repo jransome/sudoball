@@ -1,19 +1,27 @@
-export type RTCMessageType = 'GAME_UPDATE' | 'CLIENT_INPUT'
+import { Team } from './config';
 
-export type RTCMessage = {
-  type: RTCMessageType;
-  payload: object;
+export type RTCHostMessageType =
+  | 'GAME_UPDATE'
+  | 'PLAYER_LINEUP_CHANGE'
+
+export type RTCClientMessageType =
+  | 'CLIENT_INPUT'
+
+type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object> = {
+  type: T;
+  payload: P;
 }
 
-export interface RTCGameUpdate extends RTCMessage {
-  type: 'GAME_UPDATE';
-  payload: GameObjects;
-}
+export type RTCGameUpdate = RTCMessage<'GAME_UPDATE', BroadcastedGameState>
+export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', [PeerId, Participant][]>
 
-export interface RTCClientInput extends RTCMessage {
-  type: 'CLIENT_INPUT';
-  payload: Vector2;
-}
+export type RTCHostMessage =
+  | RTCGameUpdate
+  | RTCPlayerLineupChanged
+
+export type RTCClientInput = RTCMessage<'CLIENT_INPUT', Vector2>
+export type RTCClientMessage =
+  | RTCClientInput
 
 export type PeerId = string; // unique identifier for each rtc (player) connection
 
@@ -24,20 +32,20 @@ export type Vector2 = {
 
 export type Polygon = Vector2[];
 
-export type PlayerState = {
+export type Player = {
   id: PeerId;
   position: Vector2;
-  radius: number;
 }
 
-export type GameObjects = {
+export type BroadcastedGameState = {
   boundaries: Polygon[]; // TODO: remove
-  // ball: Circle;
-  // players: Circle[];
   boxes: Polygon[];
-  players: PlayerState[];
+  players: Player[];
 }
 
-export type PlayerInputs = {
-  [k in PeerId]: Vector2;
+export type PlayerInputs = Record<PeerId, Vector2>;
+
+export type Participant = {
+  name: string;
+  team: Team;
 }

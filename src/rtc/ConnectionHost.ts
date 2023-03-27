@@ -1,7 +1,7 @@
 import { QueryDocumentSnapshot } from '@firebase/firestore-types';
 import { EventEmitter } from '../Events';
 import { db } from './firebase';
-import { PeerId, RTCClientInput, RTCGameUpdate } from '../types';
+import { PeerId, RTCClientMessage, RTCHostMessage } from '../types';
 
 type ClientConnectionDoc = {
   offer: RTCSessionDescriptionInitSignal;
@@ -21,7 +21,7 @@ type OutboundChannel = {
 type ConnectionHostEvents = {
   clientConnected: (clientId: string) => void;
   clientDisconnected: (clientId: string) => void;
-  message: (clientId: string, message: RTCClientInput) => void;
+  clientMessage: (clientId: string, message: RTCClientMessage) => void;
 }
 
 export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
@@ -47,7 +47,7 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
     });
   }
 
-  public broadcast(message: RTCGameUpdate) {
+  public broadcast(message: RTCHostMessage) {
     this.outboundChannels.forEach(c => c.channel.send(JSON.stringify(message))); // TODO cache as array?
   }
 
@@ -91,13 +91,15 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
       receiveChannel.onopen = () => console.log('receive channel opened');
       receiveChannel.onclose = () => {
         console.log('receive channel closed for client', clientId);
-        if (!this.outboundChannels.has(clientId)) console.error('client disconnected but channel not in memory');
+        if (!this.outboundChannels.has(clientId)) {
+          console.error('client disconnected but channel not in memory');
+        }
         
         this.outboundChannels.get(clientId)?.closePeerConnection();
         this.outboundChannels.delete(clientId);
         this.emit('clientDisconnected', clientId);
       };
-      receiveChannel.onmessage = event => this.emit('message', clientId, JSON.parse(event.data));
+      receiveChannel.onmessage = event => this.emit('clientMessage', clientId, JSON.parse(event.data));
       receiveChannel.onerror = error => console.error('receive channel error:', error);
     };
 

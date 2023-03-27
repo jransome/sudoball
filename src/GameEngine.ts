@@ -1,15 +1,21 @@
 import Matter from 'matter-js';
 import { PLAYER_SIZE, MOVE_FORCE } from './config';
 import { EventEmitter } from './Events';
-import { PeerId, GameObjects, Vector2, PlayerInputs } from './types';
+import { PeerId, BroadcastedGameState, Vector2, PlayerInputs } from './types';
 
 type GameEngineEvents = {
   update: (
-    gameObjects: GameObjects,
+    gameState: BroadcastedGameState,
     applyInputs: (inputs: PlayerInputs) => void,
   ) => void;
   gameEvent: (eventName: string) => void;
 }
+
+// type PlayerGameObject = {
+//   name: string;
+//   team: Team;
+//   body: Matter.Body;
+// }
 
 const scaleVector2 = ({ x, y }: Vector2, scalar: number): Vector2 => ({ x: x * scalar, y: y * scalar });
 
@@ -46,17 +52,16 @@ export class GameEngine extends EventEmitter<GameEngineEvents> {
     });
 
     this.gameIntervalId = window.setInterval(() => {
-      const gameObjects = {
-        boundaries: boundaries.map(getVertices), // TODO: don't send over RTC
+      const gameState = {
+        boundaries: boundaries.map(getVertices),
         boxes: boxes.map(getVertices),
-        players: [...this.players.entries()].map(([id, body]) => ({
+        players: [...this.players].map(([id, body]) => ({
           id,
           position: body.position,
-          radius: PLAYER_SIZE, // TODO: don't send over RTC
         })),
       };
 
-      this.emit('update', gameObjects, applyInputs);
+      this.emit('update', gameState, applyInputs);
       Matter.Engine.update(this.engine, this.tickPeriod);
     }, this.tickPeriod);
   }
@@ -76,9 +81,11 @@ export class GameEngine extends EventEmitter<GameEngineEvents> {
 
   public removePlayer(id: PeerId) {
     const body = this.players.get(id);
-    if (!body) return;
-    this.players.delete(id);
-    Matter.Composite.remove(this.engine.world, body);
+    if (!this.players.delete(id)) {
+      console.error('tried to remove player from engine but they did not exist!', id);
+      return;
+    }
+    Matter.Composite.remove(this.engine.world, body!);
   }
 }
 

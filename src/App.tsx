@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { FRAMERATE_HZ, GAME_DIMENSIONS } from './config';
+import { FRAMERATE_HZ, GAME_DIMENSIONS, Team } from './config';
 import { ConnectionClient } from './rtc/ConnectionClient';
 import { ConnectionHost } from './rtc/ConnectionHost';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
 import { GameEngine } from './GameEngine';
 import { getMovementInput } from './controls';
-import { PeerId, RTCClientInput, RTCGameUpdate, PlayerInputs } from './types';
+import { PeerId, PlayerInputs, RTCClientMessage, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
 import { CanvasPainter } from './CanvasPainter';
+import { ParticipantManager } from './ParticipantManager';
 
 const useStyles = createUseStyles({
   appUi: {
@@ -21,21 +22,19 @@ const useStyles = createUseStyles({
   },
 });
 
-
-const clientInputs: PlayerInputs = {};
+const playerInputs: PlayerInputs = {};
 
 const startEngine = (host: ConnectionHost) => {
   const gameEngine = new GameEngine(GAME_DIMENSIONS, FRAMERATE_HZ);
 
-  gameEngine.on('update', (gameObjects, applyInputs) => {
+  gameEngine.on('update', (gameState, applyInputs) => {
     applyInputs({
-      ...clientInputs,
+      ...playerInputs,
       [host.peerId]: getMovementInput(),
     });
-    // clientInputs.testInput && applyInputs(clientInputs.testInput);
 
-    host.broadcast({ type: 'GAME_UPDATE', payload: gameObjects });
-    CanvasPainter.paint(gameObjects);
+    host.broadcast({ type: 'GAME_UPDATE', payload: gameState });
+    CanvasPainter.paint(gameState);
   });
 
   // gameEngine.on('gameEvent', (gameEvent) => {
@@ -47,6 +46,10 @@ const startEngine = (host: ConnectionHost) => {
   //   */
   // });
 
+  ParticipantManager.HostInterface.add(
+    host.peerId,
+    host.clients.length % 2 === 0 ? Team.Red : Team.Blue,
+  );
   gameEngine.addPlayer(host.peerId);
   gameEngine.start();
   return gameEngine;
@@ -57,44 +60,68 @@ const App = () => {
 
   const [hostId, setHostId] = useState('');
   const [getConnectedState, setGetConnectedState] = useState<() => boolean>(() => () => false);
+  const [attemptingConnection, setAttemptingConnection] = useState(false);
   const [clients, setClients] = useState<string[]>([]);
 
   const createGame = () => {
-    const host = new ConnectionHost();
-    const engine = startEngine(host!);
+    const rtc = new ConnectionHost();
+    const engine = startEngine(rtc);
 
-    host.on('clientConnected', (id) => {
-      setClients(host.clients);
+    rtc.on('clientConnected', (id) => {
+      setClients(rtc.clients);
+      ParticipantManager.HostInterface.add(
+        id,
+        rtc.clients.length % 2 === 0 ? Team.Red : Team.Blue,
+      );
       engine.addPlayer(id);
+      rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
     });
 
-    host.on('clientDisconnected', (id) => {
-      setClients(host.clients);
+    rtc.on('clientDisconnected', (id) => {
+      setClients(rtc.clients);
+      ParticipantManager.HostInterface.remove(id);
+      delete playerInputs[id];
       engine.removePlayer(id);
+      rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
     });
 
-    host.on('message', (clientId: PeerId, message: RTCClientInput) => {
-      // TODO: what if client isn't registered?!
-      clientInputs[clientId] = message.payload;
-
-      // gets player inputs and 'queue'(?) them for inputting to the engine
+    rtc.on('clientMessage', (clientId: PeerId, message: RTCClientMessage) => {
+      playerInputs[clientId] = message.payload;
     });
 
-    host.startHosting();
+    rtc.startHosting();
 
-    setHostId(host.peerId);
-    setGetConnectedState(() => () => host.clients.length > 0);
+    setHostId(rtc.peerId);
+    setGetConnectedState(() => () => rtc.clients.length > 0);
   };
 
   const joinGame = async (hostId: string) => {
-    const client = new ConnectionClient();
-    client.on('message', (message: RTCGameUpdate) => {
-      // get player input and send it back to keep in lock step with engine frame rate
-      client.sendToHost({ type: 'CLIENT_INPUT', payload: getMovementInput() });
+    const rtc = new ConnectionClient();
+
+    const onGameUpdate = (message: RTCGameUpdate) => {
+      rtc.sendToHost({ type: 'CLIENT_INPUT', payload: getMovementInput() });
       CanvasPainter.paint(message.payload);
+    };
+    const onLineupChange = (message: RTCPlayerLineupChanged) => {
+      ParticipantManager.ClientInterface.participants = message.payload;
+    };
+
+    type HostMessageHandler = (message: RTCHostMessage) => void;
+    const hostMessageHandlers: Record<RTCHostMessageType, HostMessageHandler> = {
+      GAME_UPDATE: onGameUpdate as HostMessageHandler,
+      PLAYER_LINEUP_CHANGE: onLineupChange as HostMessageHandler,
+    };
+
+    rtc.on('hostMessage', (message: RTCHostMessage) => {
+      const handler = hostMessageHandlers[message.type];
+      if (!handler) {
+        console.error('received unprocessable message from host!', message);
+        return;
+      }
+      handler(message);
     });
-    await client.connectToHost(hostId);
-    setGetConnectedState(() => () => client.connected);
+    await rtc.connectToHost(hostId);
+    setGetConnectedState(() => () => rtc.connected);
   };
 
   return (
@@ -106,15 +133,21 @@ const App = () => {
         </h3>
         <div>
           <button
-            onClick={() => createGame()}
-            disabled={getConnectedState()}
+            onClick={() => {
+              createGame();
+              setAttemptingConnection(true);
+            }}
+            disabled={!!hostId || attemptingConnection || getConnectedState()}
           >
             Create Game
           </button>
 
           <button
-            onClick={() => joinGame(hostId)}
-            disabled={!hostId || getConnectedState()}
+            onClick={() => {
+              joinGame(hostId);
+              setAttemptingConnection(true);
+            }}
+            disabled={!hostId || attemptingConnection || getConnectedState()}
           >
             Join Game
           </button>

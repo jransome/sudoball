@@ -1,10 +1,10 @@
 import { EventEmitter } from '../Events';
-import { PeerId, RTCClientInput, RTCGameUpdate } from '../types';
+import { PeerId, RTCClientMessage, RTCGameUpdate } from '../types';
 import { db } from './firebase';
 
 type ConnectionClientEvents = {
   hostClosed: () => void;
-  message: (message: RTCGameUpdate) => void;
+  hostMessage: (message: RTCGameUpdate) => void;
 }
 
 export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
@@ -57,7 +57,7 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
         this.disconnect();
         this.emit('hostClosed');
       };
-      receiveChannel.onmessage = event => this.emit('message', JSON.parse(event.data));
+      receiveChannel.onmessage = event => this.emit('hostMessage', JSON.parse(event.data));
       receiveChannel.onerror = error => console.error('receive channel error:', error);
     };
 
@@ -105,7 +105,7 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
     this.isConnected = true;
   }
 
-  public async sendToHost(message: RTCClientInput) {
+  public async sendToHost(message: RTCClientMessage) {
     await this.connectionEstablished;
     this.sendChannel.send(JSON.stringify(message));
   }
