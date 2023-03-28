@@ -75,6 +75,13 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
       iceCandidatePoolSize: 10,
     });
 
+    peerConnection.oniceconnectionstatechange = () => {
+      if (peerConnection.iceConnectionState === 'disconnected') {
+        // triggered on other person clicking back or refreshing or closing the tab, but with a ~5 second delay
+        this.onClientDisconnected(clientId);
+      }
+    };
+
     const sendChannel = peerConnection.createDataChannel('sendChannel');
     sendChannel.onopen = () => {
       console.log('send channel opened');
@@ -85,23 +92,30 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
       this.emit('clientConnected', clientId);
     };
     sendChannel.onclose = () => console.log('send channel closed');
-    sendChannel.onerror = error => console.error('send channel error:', error); // TODO catch channel disconnects here too?
+    sendChannel.onerror = (event) => {
+      const error = (event as RTCErrorEvent).error as RTCError;
+      if (error.message === 'User-Initiated Abort, reason=Close called') {
+        // only triggered on other person clicking back or refreshing. closing the tab doesn't trigger this
+        this.onClientDisconnected(clientId);
+        return;
+      }
+      console.error('send channel error:', error);
+    };
 
     peerConnection.ondatachannel = (ev) => {
       const receiveChannel = ev.channel;
       receiveChannel.onopen = () => console.log('receive channel opened');
-      receiveChannel.onclose = () => {
-        console.log('receive channel closed for client', clientId);
-        if (!this.outboundChannels.has(clientId)) {
-          console.error('client disconnected but channel not in memory');
-        }
-        
-        this.outboundChannels.get(clientId)?.closePeerConnection();
-        this.outboundChannels.delete(clientId);
-        this.emit('clientDisconnected', clientId);
-      };
+      receiveChannel.onclose = () => console.log('receive channel closed');
       receiveChannel.onmessage = event => this.emit('clientMessage', clientId, JSON.parse(event.data));
-      receiveChannel.onerror = error => console.error('receive channel error:', error);
+      receiveChannel.onerror = (event) => {
+        const error = (event as RTCErrorEvent).error as RTCError;
+        if (error.message === 'User-Initiated Abort, reason=Close called') {
+          // only triggered on other person clicking back or refreshing. closing the tab doesn't trigger this
+          this.onClientDisconnected(clientId);
+          return;
+        }
+        console.error('receive channel error:', error);
+      };
     };
 
 
@@ -136,5 +150,13 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
         .filter(change => change.type === 'added')
         .forEach(change => peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data())));
     }, error => console.error('Error onSnapshot of iceOfferCandidates when hosting:', error));
+  }
+
+  private onClientDisconnected(clientId: PeerId) {
+    this.outboundChannels.get(clientId)?.closePeerConnection();
+    if (this.outboundChannels.delete(clientId)) { // may have already been deleted from other 'disconnection' callbacks
+      console.log('client disconnected', clientId);
+      this.emit('clientDisconnected', clientId);
+    }
   }
 }

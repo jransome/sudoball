@@ -111,7 +111,7 @@ const App = () => {
       handler(message);
     });
 
-    rtc.on('hostClosed', () => setIsConnected(false));
+    rtc.on('disconnected', () => setIsConnected(false));
     await rtc.connectToHost(hostId);
     setIsConnected(true);
   };
