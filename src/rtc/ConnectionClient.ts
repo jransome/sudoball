@@ -69,17 +69,25 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
     const iceAnswerCandidates = connectionOfferDoc.collection('iceAnswerCandidates');
 
     this.peerConnection.onicecandidate = ({ candidate }) => {
-      candidate && iceOfferCandidates.add(candidate.toJSON());
+      try {
+        candidate && iceOfferCandidates.add(candidate.toJSON());
+      } catch (error) {
+        console.error('Error adding ice candidate to firestore:', error);
+      }
     };
     const offerDescription = await this.peerConnection.createOffer();
     await this.peerConnection.setLocalDescription(offerDescription); // this will start generating ice candidates
 
-    await connectionOfferDoc.set({
-      offer: {
-        sdp: offerDescription.sdp, // session description protocol
-        type: offerDescription.type,
-      },
-    });
+    try {
+      await connectionOfferDoc.set({
+        offer: {
+          sdp: offerDescription.sdp, // session description protocol
+          type: offerDescription.type,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating connectionOfferDoc with offer:', error);
+    }
 
     // Listen for remote answer
     connectionOfferDoc.onSnapshot((snapshot) => {
@@ -89,7 +97,7 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
         const answerDescription = new RTCSessionDescription(data.answer);
         this.peerConnection.setRemoteDescription(answerDescription);
       }
-    });
+    }, error => console.error('Error onSnapshot of connectionOfferDoc when clienting:', error));
 
     // Listen for ice candidates on answering user
     iceAnswerCandidates.onSnapshot((snapshot) => {
@@ -99,7 +107,7 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
           console.log('received ice ANSWER from host');
           this.peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
         });
-    });
+    }, error => console.error('Error onSnapshot of iceAnswerCandidates when clienting:', error));
 
     await this.connectionEstablished;
     this.isConnected = true;

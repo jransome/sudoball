@@ -44,7 +44,7 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
       snapshot.docChanges()
         .filter(change => change.type === 'added')
         .forEach(({ doc }) => this.connectWithClient(doc as QueryDocumentSnapshot<ClientConnectionDoc>));
-    });
+    }, error => console.error('Error onSnapshot of client connections when hosting:', error));
   }
 
   public broadcast(message: RTCHostMessage) {
@@ -84,7 +84,7 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
       this.emit('clientConnected', clientId);
     };
     sendChannel.onclose = () => console.log('send channel closed');
-    sendChannel.onerror = error => console.error('send channel error:', error);
+    sendChannel.onerror = error => console.error('send channel error:', error); // TODO catch channel disconnects here too?
 
     peerConnection.ondatachannel = (ev) => {
       const receiveChannel = ev.channel;
@@ -107,7 +107,11 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
     const iceOfferCandidates = clientConnectionDocSnapshot.ref.collection('iceOfferCandidates');
     const iceAnswerCandidates = clientConnectionDocSnapshot.ref.collection('iceAnswerCandidates');
     peerConnection.onicecandidate = ({ candidate }) => {
-      candidate && iceAnswerCandidates.add(candidate.toJSON());
+      try {
+        candidate && iceAnswerCandidates.add(candidate.toJSON());
+      } catch (error) {
+        console.error('Error adding ice candidate to firestore:', clientId, error);
+      }
     };
 
     const clientOffer = clientConnectionDocSnapshot.data().offer;
@@ -119,12 +123,17 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
       sdp: answerDescription.sdp,
       type: answerDescription.type,
     };
-    await clientConnectionDocSnapshot.ref.update({ answer });
+
+    try {
+      await clientConnectionDocSnapshot.ref.update({ answer });
+    } catch (error) {
+      console.error('Error updating client doc with answer:', clientId, error);
+    }
 
     iceOfferCandidates.onSnapshot((snapshot) => {
       snapshot.docChanges()
         .filter(change => change.type === 'added')
         .forEach(change => peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data())));
-    });
+    }, error => console.error('Error onSnapshot of iceOfferCandidates when hosting:', error));
   }
 }
