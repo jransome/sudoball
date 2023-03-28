@@ -1,4 +1,5 @@
 import { EventEmitter } from '../Events';
+import { generateReadableId } from '../id';
 import { PeerId, RTCClientMessage, RTCGameUpdate } from '../types';
 import { db } from './firebase';
 
@@ -16,7 +17,7 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
 
   constructor() {
     super();
-    this.peerId = crypto.randomUUID();
+    this.peerId = generateReadableId();
   }
 
   get connected() {

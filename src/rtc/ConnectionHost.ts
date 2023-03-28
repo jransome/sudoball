@@ -2,6 +2,7 @@ import { QueryDocumentSnapshot } from '@firebase/firestore-types';
 import { EventEmitter } from '../Events';
 import { db } from './firebase';
 import { PeerId, RTCClientMessage, RTCHostMessage } from '../types';
+import { generateReadableId } from '../id';
 
 type ClientConnectionDoc = {
   offer: RTCSessionDescriptionInitSignal;
@@ -30,7 +31,7 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
 
   constructor() {
     super();
-    this.peerId = crypto.randomUUID();
+    this.peerId = generateReadableId();
   }
 
   public get clients() {
