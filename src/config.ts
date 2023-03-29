@@ -5,7 +5,7 @@ export const FRAMERATE_HZ = 60;
 export const CANVAS_SHARPNESS_FACTOR = 3;
 
 export const GAME_DIMENSIONS: Vector2 = {
-  x: 600,
+  x: 800,
   y: 400,
 };
 

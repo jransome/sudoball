@@ -11,9 +11,6 @@ import { CanvasPainter } from './CanvasPainter';
 import { ParticipantManager } from './ParticipantManager';
 
 const useStyles = createUseStyles({
-  appUi: {
-    margin: '0px 30px',
-  },
   connected: {
     color: 'greenyellow',
   },
@@ -118,45 +115,43 @@ const App = () => {
 
   return (
     <>
-      <div className={classes.appUi}>
-        <h1>Sudoball</h1>
-        <h3 className={isConnected ? classes.connected : classes.disconnected}>
-          {isConnected ? 'Channel Open' : 'Disconnected'}
-        </h3>
-        <div>
-          <button
-            id='create-game'
-            onClick={() => {
-              createGame();
-              setAttemptingConnection(true);
-            }}
-            disabled={!!hostId || attemptingConnection || isConnected}
-          >
-            Create Game
-          </button>
-
-          <button
-            id='join-game'
-            onClick={() => {
-              joinGame(hostId);
-              setAttemptingConnection(true);
-            }}
-            disabled={!hostId || attemptingConnection || isConnected}
-          >
-            Join Game
-          </button>
-          <input id='host-id' type='text' value={hostId} onChange={ev => setHostId(ev.target.value)} />
-          <button onClick={() => navigator.clipboard.writeText(hostId)}>copy</button>
-
-        </div>
-
-        <h4>Connected to:</h4>
-        <ul>
-          {clients.map((c, i) => <li key={i}>{c}</li>)}
-          {isConnected && !clients.length && <li>host</li>}
-        </ul>
-      </div>
+      <h4>Sudoball</h4>
       <ResponsiveCanvas gameDimensions={GAME_DIMENSIONS} />
+      <h3 className={isConnected ? classes.connected : classes.disconnected}>
+        {isConnected ? 'Channel Open' : 'Disconnected'}
+      </h3>
+      <div>
+        <button
+          id='create-game'
+          onClick={() => {
+            createGame();
+            setAttemptingConnection(true);
+          }}
+          disabled={!!hostId || attemptingConnection || isConnected}
+        >
+          Create Game
+        </button>
+
+        <button
+          id='join-game'
+          onClick={() => {
+            joinGame(hostId);
+            setAttemptingConnection(true);
+          }}
+          disabled={!hostId || attemptingConnection || isConnected}
+        >
+          Join Game
+        </button>
+        <input id='host-id' type='text' value={hostId} onChange={ev => setHostId(ev.target.value)} />
+        <button onClick={() => navigator.clipboard.writeText(hostId)}>copy</button>
+
+      </div>
+
+      <h4>Connected to:</h4>
+      <ul>
+        {clients.map((c, i) => <li key={i}>{c}</li>)}
+        {isConnected && !clients.length && <li>host</li>}
+      </ul>
     </>
   );
 };
