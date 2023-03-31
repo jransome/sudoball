@@ -8,7 +8,7 @@ import { GameEngine } from './game/GameEngine';
 import { getLocalInput } from './controls';
 import { PeerId, RTCClientInput, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
 import { CanvasPainter } from './CanvasPainter';
-import { ParticipantManager } from './ParticipantManager';
+import { ParticipantManager } from './participants';
 
 const useStyles = createUseStyles({
   connected: {
@@ -54,7 +54,7 @@ const App = () => {
 
   const createGame = () => {
     const rtc = new ConnectionHost();
-    ParticipantManager.selfPeerId = rtc.peerId;
+    ParticipantManager.reset(rtc.peerId);
     
     startEngine(rtc);
 
@@ -86,14 +86,14 @@ const App = () => {
 
   const joinGame = async (hostId: string) => {
     const rtc = new ConnectionClient();
-    ParticipantManager.selfPeerId = rtc.peerId;
+    ParticipantManager.reset(rtc.peerId);
 
     const onGameUpdate = (message: RTCGameUpdate) => {
       rtc.sendToHost({ type: 'CLIENT_INPUT', payload: getLocalInput() });
       CanvasPainter.paint(message.payload);
     };
     const onLineupChange = (message: RTCPlayerLineupChanged) => {
-      ParticipantManager.ClientInterface.participants = message.payload;
+      ParticipantManager.ClientInterface.participants = new Map(message.payload);
     };
 
     type HostMessageHandler = (message: RTCHostMessage) => void;

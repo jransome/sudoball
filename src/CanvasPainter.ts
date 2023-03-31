@@ -1,5 +1,5 @@
 import { BALL_RADIUS, KICK_RADIUS, PLAYER_RADIUS, Team } from './config';
-import { ParticipantManager } from './ParticipantManager';
+import { ParticipantManager } from './participants';
 import { BroadcastedGameState, Vector2 } from './types';
 
 type Polygon = Vector2[];
