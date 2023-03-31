@@ -1,6 +1,6 @@
 import puppeteer, { Browser } from 'puppeteer';
 
-const localhost = 'http://localhost:5174';
+const localhost = 'http://localhost:5173';
 const browsers = [
   // these position args don't really work properly but it works for now
   { size: [1200, 800], position: [0, 0, 0] }, // for some reason a 3rd number forces it to open on the second monitor, but only when you're on that screen

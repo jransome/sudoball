@@ -1,28 +1,33 @@
 import Matter from 'matter-js';
-import { PLAYER_SIZE, MOVE_FORCE, GAME_DIMENSIONS, FRAMERATE_HZ } from '../config';
+import { MOVE_FORCE, GAME_DIMENSIONS, FRAMERATE_HZ, BALL_RADIUS, KICK_FORCE, Team, KICK_COOLDOWN_MS, KICK_RADIUS } from '../config';
 import { EventEmitter } from '../Events';
-import { PeerId, BroadcastedGameState, Vector2 } from '../types';
-import { createBoundaries, createBoxes, scaleVector2, serialiseVertices, serialisePlayers } from './helpers';
+import { PeerId, BroadcastedGameState, Input } from '../types';
+import { createBoundaries, serialiseVertices, serialisePlayers, createBallBody, scale, subtract, normalise, sqrMagnitude, createPlayerBody } from './helpers';
+
+// Reduce velocity threshold required for engine to calculate ball bounces
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(Matter.Resolver as any)._restingThresh = 0.01;
 
 type GameEngineEvents = {
   update: (
     gameState: BroadcastedGameState,
-    applyInputs: (inputs: Map<PeerId, Vector2>) => void,
+    applyInputs: (inputs: Map<PeerId, Input>) => void,
   ) => void;
   gameEvent: (eventName: string) => void;
 }
 
-// type PlayerGameObject = {
-//   name: string;
-//   team: Team;
-//   body: Matter.Body;
-// }
+export type PlayerGameObject = {
+  team: Team;
+  body: Matter.Body;
+  isKicking: boolean;
+  lastKick: number;
+}
 
 const engineTickPeriod = 1000 / FRAMERATE_HZ;
 
 class Engine extends EventEmitter<GameEngineEvents> {
   private gameIntervalId!: number;
-  private players: Map<PeerId, Matter.Body> = new Map();
+  private players: Map<PeerId, PlayerGameObject> = new Map();
   private engine!: Matter.Engine;
 
   constructor() {
@@ -33,27 +38,37 @@ class Engine extends EventEmitter<GameEngineEvents> {
 
   public start() {
     const boundaries = createBoundaries(GAME_DIMENSIONS);
-    const boxes = createBoxes(GAME_DIMENSIONS);
+    const ball = createBallBody(scale(GAME_DIMENSIONS, 0.5));
+
     Matter.Composite.add(this.engine.world, [
       ...boundaries,
-      ...boxes,
+      ball,
     ]);
 
-    const applyInputs = (inputs: Map<PeerId, Vector2>) => Array
+    const applyInputs = (inputs: Map<PeerId, Input>) => Array
       .from(inputs)
-      .forEach(([playerId, inputVector]) => {
-        const playerBody = this.players.get(playerId);
-        if (!playerBody) {
+      .forEach(([playerId, { x, y, isKicking }]) => {
+        const player = this.players.get(playerId);
+        if (!player) {
           console.error('received input for player that does not exist in game!', playerId);
           return;
         }
-        Matter.Body.applyForce(playerBody, playerBody.position, scaleVector2(inputVector, MOVE_FORCE));
+        player.isKicking = isKicking;
+        Matter.Body.applyForce(player.body, player.body.position, scale({ x, y }, MOVE_FORCE));
+
+        if (isKicking && Date.now() > player.lastKick + KICK_COOLDOWN_MS) {
+          const distanceVector = subtract(ball.position, player.body.position);
+          if (sqrMagnitude(distanceVector) > (KICK_RADIUS + BALL_RADIUS) ** 2) return;
+          const ballDirection = normalise(distanceVector);
+          Matter.Body.applyForce(ball, ball.position, scale(ballDirection, KICK_FORCE));
+          player.lastKick = Date.now();
+        }
       });
 
     this.gameIntervalId = window.setInterval(() => {
       const gameState = {
         boundaries: boundaries.map(serialiseVertices),
-        boxes: boxes.map(serialiseVertices),
+        ball: ball.position,
         players: Array.from(this.players).map(serialisePlayers),
       };
 
@@ -69,19 +84,19 @@ class Engine extends EventEmitter<GameEngineEvents> {
     // TODO: teardown engine
   }
 
-  public addPlayer(id: PeerId) {
-    const body = Matter.Bodies.circle(100, 150, PLAYER_SIZE);
-    this.players.set(id, body);
+  public addPlayer(id: PeerId, team: Team) {
+    const body = createPlayerBody({ x: 100, y: 150 });
+    this.players.set(id, { body, team, isKicking: false, lastKick: Date.now() });
     Matter.Composite.add(this.engine.world, body);
   }
 
   public removePlayer(id: PeerId) {
-    const body = this.players.get(id);
+    const playerBody = this.players.get(id)?.body;
     if (!this.players.delete(id)) {
       console.error('tried to remove player from engine but they did not exist!', id);
       return;
     }
-    Matter.Composite.remove(this.engine.world, body!);
+    Matter.Composite.remove(this.engine.world, playerBody!);
   }
 }
 

@@ -1,41 +1,30 @@
-import { Vector2 } from './types';
+import { Input } from './types';
 
-type MovementKey = typeof MOVEMENT_KEYS[number]
-
-const MOVEMENT_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
-const FIRE_KEY = 'Space';
+type InputKey = typeof INPUT_KEYS[number]
+const INPUT_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'] as const;
 
 const keyDownStates = {
   ArrowLeft: false,
   ArrowRight: false,
   ArrowUp: false,
   ArrowDown: false,
+  Space: false,
 };
 
 document.addEventListener('keydown', (event) => {
-  if (![...MOVEMENT_KEYS, FIRE_KEY].includes(event.key)) {
-    return;
-  }
-
+  if (!INPUT_KEYS.includes(event.code as InputKey)) return;
   event.preventDefault();
-  if (event.key === FIRE_KEY) {
-    // do something
-    return;
-  }
-
-  keyDownStates[event.key as MovementKey] = true;
+  keyDownStates[event.code as InputKey] = true;
 });
 
 document.addEventListener('keyup', (event) => {
-  if (!MOVEMENT_KEYS.includes(event.key as MovementKey)) {
-    return;
-  }
-
+  if (!INPUT_KEYS.includes(event.code as InputKey)) return;
   event.preventDefault();
-  keyDownStates[event.key as MovementKey] = false;
+  keyDownStates[event.code as InputKey] = false;
 });
 
-export const getLocalMovementInput = (): Vector2 => ({
+export const getLocalInput = (): Input => ({
   x: (Number(keyDownStates.ArrowLeft) * -1) + Number(keyDownStates.ArrowRight),
   y: (Number(keyDownStates.ArrowUp) * -1) + Number(keyDownStates.ArrowDown),
+  isKicking: keyDownStates.Space,
 });

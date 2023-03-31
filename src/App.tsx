@@ -5,7 +5,7 @@ import { ConnectionClient } from './rtc/ConnectionClient';
 import { ConnectionHost } from './rtc/ConnectionHost';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
 import { GameEngine } from './game/GameEngine';
-import { getLocalMovementInput } from './controls';
+import { getLocalInput } from './controls';
 import { PeerId, RTCClientInput, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
 import { CanvasPainter } from './CanvasPainter';
 import { ParticipantManager } from './ParticipantManager';
@@ -21,7 +21,7 @@ const useStyles = createUseStyles({
 
 const startEngine = (host: ConnectionHost) => {
   GameEngine.on('update', (gameState, applyInputs) => {
-    const playerInputs = ParticipantManager.HostInterface.playerInputs.set(host.peerId, getLocalMovementInput());
+    const playerInputs = ParticipantManager.HostInterface.playerInputs.set(host.peerId, getLocalInput());
     applyInputs(playerInputs);
 
     host.broadcast({ type: 'GAME_UPDATE', payload: gameState });
@@ -54,6 +54,8 @@ const App = () => {
 
   const createGame = () => {
     const rtc = new ConnectionHost();
+    ParticipantManager.selfPeerId = rtc.peerId;
+    
     startEngine(rtc);
 
     rtc.on('clientConnected', (id) => {
@@ -84,9 +86,10 @@ const App = () => {
 
   const joinGame = async (hostId: string) => {
     const rtc = new ConnectionClient();
+    ParticipantManager.selfPeerId = rtc.peerId;
 
     const onGameUpdate = (message: RTCGameUpdate) => {
-      rtc.sendToHost({ type: 'CLIENT_INPUT', payload: getLocalMovementInput() });
+      rtc.sendToHost({ type: 'CLIENT_INPUT', payload: getLocalInput() });
       CanvasPainter.paint(message.payload);
     };
     const onLineupChange = (message: RTCPlayerLineupChanged) => {

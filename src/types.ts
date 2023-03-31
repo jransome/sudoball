@@ -19,7 +19,7 @@ export type RTCHostMessage =
   | RTCGameUpdate
   | RTCPlayerLineupChanged
 
-export type RTCClientInput = RTCMessage<'CLIENT_INPUT', Vector2>
+export type RTCClientInput = RTCMessage<'CLIENT_INPUT', Input>
 export type RTCClientMessage =
   | RTCClientInput
 
@@ -32,18 +32,23 @@ export type Vector2 = {
 
 export type Polygon = Vector2[];
 
-export type Player = {
+export type SerialisedPlayer = {
   id: PeerId;
   position: Vector2;
+  isKicking: boolean;
 }
 
 export type BroadcastedGameState = {
   boundaries: Polygon[]; // TODO: remove
-  boxes: Polygon[];
-  players: Player[];
+  ball: Vector2;
+  players: SerialisedPlayer[];
 }
 
 export type Participant = {
   name: string;
   team: Team;
+}
+
+export type Input = Vector2 & {
+  isKicking: boolean;
 }

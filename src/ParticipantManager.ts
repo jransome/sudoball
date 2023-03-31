@@ -1,14 +1,15 @@
 import { Team } from './config';
 import { GameEngine } from './game/GameEngine';
-import { PeerId, Participant, Vector2 } from './types';
+import { PeerId, Participant, Input } from './types';
 
+let selfId: PeerId = null!;
 let participants = new Map<PeerId, Participant>();
-const playerInputs = new Map<PeerId, Vector2>();
+const playerInputs = new Map<PeerId, Input>();
 
 const add = (id: PeerId, team: Team) => {
-  GameEngine.addPlayer(id);
+  GameEngine.addPlayer(id, team);
   participants.set(id, {
-    name: id.slice(0, 4),
+    name: id,
     team,
   });
 };
@@ -37,6 +38,12 @@ const ClientInterface = {
 };
 
 export const ParticipantManager = {
+  get selfPeerId() {
+    return selfId;
+  },
+  set selfPeerId(value) {
+    selfId = value;
+  },
   get participants() {
     return participants;
   },

@@ -20,19 +20,20 @@
     - [ ] handling client drop out
     - [ ] handling host drop out
 - [ ] game
+    - [ ] handling client join during game
     - [ ] handling client drop out
     - [ ] handling host drop out
     - [ ] spectating?
     - [ ] mechanics
         - [ ] starting the game
-        - [ ] ability to kick the ball
+        - [x] ability to kick the ball
         - [ ] goal detection
         - [ ] reset positions after goal
         - [ ] player stats - touches, goals, saves?
         - [ ] ending the match on time/goal limit
     - [ ] ui
         - [ ] make it look like a football pitch
-        - [ ] kick radius indicator
+        - [x] kick radius indicator
         - [ ] game clock
         - [ ] goals scored
         - [x] render player names under avatar
