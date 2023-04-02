@@ -24,6 +24,7 @@ export type PlayerGameObject = {
 }
 
 const engineTickPeriod = 1000 / FRAMERATE_HZ;
+const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
 
 class Engine extends EventEmitter<GameEngineEvents> {
   private gameIntervalId!: number;
@@ -59,7 +60,7 @@ class Engine extends EventEmitter<GameEngineEvents> {
 
         if (isKicking && Date.now() > player.lastKick + KICK_COOLDOWN_MS) {
           const distanceVector = subtract(ball.position, player.body.position);
-          if (sqrMagnitude(distanceVector) > (KICK_RADIUS + BALL_RADIUS) ** 2) return;
+          if (sqrMagnitude(distanceVector) > squareOfKickAndBallRadiusSum) return;
           const ballDirection = normalise(distanceVector);
           Matter.Body.applyForce(ball, ball.position, scale(ballDirection, KICK_FORCE));
           player.lastKick = Date.now();
@@ -68,7 +69,7 @@ class Engine extends EventEmitter<GameEngineEvents> {
 
     this.gameIntervalId = window.setInterval(() => {
       const gameState = {
-        boundaries: pitchBoundaries.map(serialiseVertices),
+        pitchBoundaries: pitchBoundaries.map(serialiseVertices),
         ball: ball.position,
         players: Array.from(this.players).map(serialisePlayers),
       };

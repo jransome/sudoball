@@ -11,6 +11,10 @@ import { CanvasPainter } from './CanvasPainter';
 import { ParticipantManager } from './participants';
 
 const useStyles = createUseStyles({
+  controls: {
+    display: 'flex',
+    alignItems: 'baseline',
+  },
   connected: {
     color: 'greenyellow',
   },
@@ -55,7 +59,7 @@ const App = () => {
   const createGame = () => {
     const rtc = new ConnectionHost();
     ParticipantManager.reset(rtc.peerId);
-    
+
     startEngine(rtc);
 
     rtc.on('clientConnected', (id) => {
@@ -118,12 +122,11 @@ const App = () => {
 
   return (
     <>
-      <h4>Sudoball</h4>
-      <ResponsiveCanvas gameDimensions={GAME_BOUNDARY_DIMENSIONS} />
-      <h3 className={isConnected ? classes.connected : classes.disconnected}>
-        {isConnected ? 'Channel Open' : 'Disconnected'}
-      </h3>
-      <div>
+      <div className={classes.controls}>
+        <h4>Sudoball</h4>
+        <h3 className={isConnected ? classes.connected : classes.disconnected}>
+          {isConnected ? 'Channel Open' : 'Disconnected'}
+        </h3>
         <button
           id='create-game'
           onClick={() => {
@@ -149,6 +152,7 @@ const App = () => {
         <button onClick={() => navigator.clipboard.writeText(hostId)}>copy</button>
 
       </div>
+      <ResponsiveCanvas gameDimensions={GAME_BOUNDARY_DIMENSIONS} />
 
       <h4>Connected to:</h4>
       <ul>

@@ -64,7 +64,7 @@ const paint = (gameState: BroadcastedGameState) => {
     return;
   }
 
-  gameState.boundaries.forEach(b => paintPolygon(ctx, 'black', 'white', b));
+  gameState.pitchBoundaries.forEach(b => paintPolygon(ctx, 'black', 'white', b));
   gameState.players.forEach((p) => {
     if (!ParticipantManager.participants.has(p.id)) {
       console.error('tried to paint a player that doesn\'t exist!', ParticipantManager.participants);

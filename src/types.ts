@@ -39,7 +39,7 @@ export type SerialisedPlayer = {
 }
 
 export type BroadcastedGameState = {
-  boundaries: Polygon[]; // TODO: remove
+  pitchBoundaries: Polygon[]; // TODO: remove
   ball: Vector2;
   players: SerialisedPlayer[];
 }
