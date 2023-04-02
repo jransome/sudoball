@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { GAME_DIMENSIONS, Team } from './config';
+import { GAME_BOUNDARY_DIMENSIONS, Team } from './config';
 import { ConnectionClient } from './rtc/ConnectionClient';
 import { ConnectionHost } from './rtc/ConnectionHost';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
@@ -119,7 +119,7 @@ const App = () => {
   return (
     <>
       <h4>Sudoball</h4>
-      <ResponsiveCanvas gameDimensions={GAME_DIMENSIONS} />
+      <ResponsiveCanvas gameDimensions={GAME_BOUNDARY_DIMENSIONS} />
       <h3 className={isConnected ? classes.connected : classes.disconnected}>
         {isConnected ? 'Channel Open' : 'Disconnected'}
       </h3>

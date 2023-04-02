@@ -45,7 +45,7 @@ const paintCircle: ShapePainter<Circle> = (ctx, fillColour, strokeColour, { posi
 };
 
 const paintPlayer = (ctx: CanvasRenderingContext2D, position: Vector2, playerName: string, teamColour: string, strokeColor: string, isSelf: boolean) => {
-  if (isSelf) paintCircle(ctx, 'rgba(0, 0, 0, 0)', 'rgba(255, 255, 255, 0.8)', { position, radius: KICK_RADIUS });
+  if (isSelf) paintCircle(ctx, 'rgba(0, 0, 0, 0)', 'rgba(255, 255, 255, 0.3)', { position, radius: KICK_RADIUS });
   paintCircle(ctx, teamColour, strokeColor, { position, radius: PLAYER_RADIUS });
   ctx.textAlign = 'center';
   ctx.fillText(playerName, position.x, position.y + 30);

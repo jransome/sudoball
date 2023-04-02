@@ -27,6 +27,7 @@
     - [ ] mechanics
         - [ ] starting the game
         - [x] ability to kick the ball
+        - [x] add goals and posts
         - [ ] goal detection
         - [ ] reset positions after goal
         - [ ] player stats - touches, goals, saves?
