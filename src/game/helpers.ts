@@ -6,10 +6,11 @@ import { collisionFilters } from './collisionFilters';
 
 export const { normalise, mult: scale, sub: subtract, magnitudeSquared: sqrMagnitude } = Matter.Vector;
 
+export const round = (vector: Vector2): Vector2 => ({ x: +vector.x.toFixed(3), y: +vector.y.toFixed(3) });
 export const serialiseVertices = (body: Matter.Body): Vector2[] => body.vertices.map(({ x, y }) => ({ x, y }));
 export const serialisePlayers = ([id, player]: [PeerId, PlayerGameObject]) => ({
   id,
-  position: player.body.position,
+  position: round(player.body.position),
   isKicking: player.isKicking,
 });
 

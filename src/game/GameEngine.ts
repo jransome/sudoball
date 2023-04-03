@@ -2,7 +2,7 @@ import Matter from 'matter-js';
 import { MOVE_FORCE, GAME_BOUNDARY_DIMENSIONS, GAME_FRAMERATE_HZ, BALL_RADIUS, KICK_FORCE, Team, KICK_COOLDOWN_MS, KICK_RADIUS } from '../config';
 import { EventEmitter } from '../Events';
 import { PeerId, BroadcastedGameState, Input } from '../types';
-import { createGameBoundary, serialisePlayers, createBallBody, scale, subtract, normalise, sqrMagnitude, createPlayerBody } from './helpers';
+import { createGameBoundary, serialisePlayers, createBallBody, scale, subtract, normalise, sqrMagnitude, createPlayerBody, round } from './helpers';
 import { pitchBodies } from './pitch';
 
 // Reduce velocity threshold required for engine to calculate ball bounces
@@ -69,7 +69,7 @@ class Engine extends EventEmitter<GameEngineEvents> {
 
     this.gameIntervalId = window.setInterval(() => {
       const gameState = {
-        ball: ball.position,
+        ball: round(ball.position),
         players: Array.from(this.players).map(serialisePlayers),
       };
 
