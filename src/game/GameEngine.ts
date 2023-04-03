@@ -1,5 +1,5 @@
 import Matter from 'matter-js';
-import { MOVE_FORCE, GAME_BOUNDARY_DIMENSIONS, FRAMERATE_HZ, BALL_RADIUS, KICK_FORCE, Team, KICK_COOLDOWN_MS, KICK_RADIUS, GOAL_WIDTH, PITCH_MARGIN } from '../config';
+import { MOVE_FORCE, GAME_BOUNDARY_DIMENSIONS, GAME_FRAMERATE_HZ, BALL_RADIUS, KICK_FORCE, Team, KICK_COOLDOWN_MS, KICK_RADIUS, GOAL_WIDTH, PITCH_MARGIN } from '../config';
 import { EventEmitter } from '../Events';
 import { PeerId, BroadcastedGameState, Input } from '../types';
 import { createPitchBoundaries, createGameBoundary, serialiseVertices, serialisePlayers, createBallBody, scale, subtract, normalise, sqrMagnitude, createPlayerBody } from './helpers';
@@ -23,7 +23,7 @@ export type PlayerGameObject = {
   lastKick: number;
 }
 
-const engineTickPeriod = 1000 / FRAMERATE_HZ;
+const engineTickPeriod = 1000 / GAME_FRAMERATE_HZ;
 const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
 
 class Engine extends EventEmitter<GameEngineEvents> {
