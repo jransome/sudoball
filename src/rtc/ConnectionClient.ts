@@ -69,7 +69,7 @@ export class ConnectionClient extends EventEmitter<ConnectionClientEvents> {
       const receiveChannel = ev.channel;
       receiveChannel.onopen = () => console.log('receive channel opened');
       receiveChannel.onclose = () => console.log('receive channel closed');
-      receiveChannel.onmessage = event => this.emit('hostMessage', JSON.parse(event.data));
+      receiveChannel.onmessage = event => this.emit('hostMessage', console.log(new TextEncoder().encode(event.data).length, JSON.parse(event.data))! || JSON.parse(event.data));
       receiveChannel.onerror = (event) => {
         const error = (event as RTCErrorEvent).error as RTCError;
         if (error.message === 'User-Initiated Abort, reason=Close called') {

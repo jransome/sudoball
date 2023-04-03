@@ -29,8 +29,11 @@ export type Vector2 = {
   x: number;
   y: number;
 }
-
 export type Polygon = Vector2[];
+export type Circle = {
+  position: Vector2;
+  radius: number;
+};
 
 export type SerialisedPlayer = {
   id: PeerId;
@@ -39,7 +42,6 @@ export type SerialisedPlayer = {
 }
 
 export type BroadcastedGameState = {
-  pitchBoundaries: Polygon[]; // TODO: remove
   ball: Vector2;
   players: SerialisedPlayer[];
 }

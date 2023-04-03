@@ -4,7 +4,7 @@ import { GAME_BOUNDARY_DIMENSIONS, Team } from './config';
 import { ConnectionClient } from './rtc/ConnectionClient';
 import { ConnectionHost } from './rtc/ConnectionHost';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
-import { GameEngine } from './game/GameEngine';
+import { GameEngine } from './game';
 import { getLocalInput } from './controls';
 import { PeerId, RTCClientInput, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
 import { CanvasPainter } from './CanvasPainter';

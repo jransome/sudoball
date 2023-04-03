@@ -1,8 +1,9 @@
 import Matter from 'matter-js';
-import { MOVE_FORCE, GAME_BOUNDARY_DIMENSIONS, GAME_FRAMERATE_HZ, BALL_RADIUS, KICK_FORCE, Team, KICK_COOLDOWN_MS, KICK_RADIUS, GOAL_WIDTH, PITCH_MARGIN } from '../config';
+import { MOVE_FORCE, GAME_BOUNDARY_DIMENSIONS, GAME_FRAMERATE_HZ, BALL_RADIUS, KICK_FORCE, Team, KICK_COOLDOWN_MS, KICK_RADIUS } from '../config';
 import { EventEmitter } from '../Events';
 import { PeerId, BroadcastedGameState, Input } from '../types';
-import { createPitchBoundaries, createGameBoundary, serialiseVertices, serialisePlayers, createBallBody, scale, subtract, normalise, sqrMagnitude, createPlayerBody } from './helpers';
+import { createGameBoundary, serialisePlayers, createBallBody, scale, subtract, normalise, sqrMagnitude, createPlayerBody } from './helpers';
+import { pitchBodies } from './pitch';
 
 // Reduce velocity threshold required for engine to calculate ball bounces
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,12 +39,11 @@ class Engine extends EventEmitter<GameEngineEvents> {
   }
 
   public start() {
-    const pitchBoundaries = createPitchBoundaries(GAME_BOUNDARY_DIMENSIONS, PITCH_MARGIN, GOAL_WIDTH);
     const ball = createBallBody(scale(GAME_BOUNDARY_DIMENSIONS, 0.5));
 
     Matter.Composite.add(this.engine.world, [
       ...createGameBoundary(GAME_BOUNDARY_DIMENSIONS),
-      ...pitchBoundaries,
+      ...pitchBodies,
       ball,
     ]);
 
@@ -69,7 +69,6 @@ class Engine extends EventEmitter<GameEngineEvents> {
 
     this.gameIntervalId = window.setInterval(() => {
       const gameState = {
-        pitchBoundaries: pitchBoundaries.map(serialiseVertices),
         ball: ball.position,
         players: Array.from(this.players).map(serialisePlayers),
       };

@@ -1,12 +1,7 @@
 import { BALL_RADIUS, KICK_RADIUS, PLAYER_RADIUS, Team } from './config';
+import { renderablePitch } from './game';
 import { ParticipantManager } from './participants';
-import { BroadcastedGameState, Vector2 } from './types';
-
-type Polygon = Vector2[];
-type Circle = {
-  position: Vector2;
-  radius: number;
-};
+import { BroadcastedGameState, Circle, Polygon, Vector2 } from './types';
 
 type ShapePainter<T extends Circle | Polygon> = (
   ctx: CanvasRenderingContext2D,
@@ -58,13 +53,9 @@ const paint = (gameState: BroadcastedGameState) => {
   }
 
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  renderablePitch.polygons.forEach(b => paintPolygon(ctx, 'black', 'white', b));
+  renderablePitch.circles.forEach(b => paintCircle(ctx, 'black', 'white', b));
 
-  if (!gameState) {
-    ctx.fillText('Nothing to render', 10, 50);
-    return;
-  }
-
-  gameState.pitchBoundaries.forEach(b => paintPolygon(ctx, 'black', 'white', b));
   gameState.players.forEach((p) => {
     if (!ParticipantManager.participants.has(p.id)) {
       console.error('tried to paint a player that doesn\'t exist!', ParticipantManager.participants);
