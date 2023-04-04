@@ -86,7 +86,10 @@ class Engine extends EventEmitter<GameEngineEvents> {
   }
 
   public addPlayer(id: PeerId, team: Team) {
-    const body = createPlayerBody({ x: 100, y: 150 });
+    const body = createPlayerBody({
+      x: GAME_BOUNDARY_DIMENSIONS.x * 0.25 + +(team === Team.Blue) * GAME_BOUNDARY_DIMENSIONS.x * 0.5,
+      y: GAME_BOUNDARY_DIMENSIONS.y / 2,
+    });
     this.players.set(id, { body, team, isKicking: false, lastKick: Date.now() });
     Matter.Composite.add(this.engine.world, body);
   }

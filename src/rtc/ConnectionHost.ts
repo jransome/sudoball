@@ -86,7 +86,7 @@ export class ConnectionHost extends EventEmitter<ConnectionHostEvents> {
     sendChannel.onopen = () => {
       console.log('send channel opened');
       this.outboundChannels.set(clientId, {
-        closePeerConnection: () => peerConnection.close(),
+        closePeerConnection: () => peerConnection.close(), // TODO: clean up all the event listeners
         channel: sendChannel,
       });
       this.emit('clientConnected', clientId);
