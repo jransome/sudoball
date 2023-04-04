@@ -1,15 +1,25 @@
 import { useRef, useEffect } from 'react';
+import { createUseStyles } from 'react-jss';
 import { CanvasPainter } from './CanvasPainter';
 import { CANVAS_SHARPNESS_FACTOR } from './config';
 import { Vector2 } from './types';
 
+const useStyles = createUseStyles({
+  canvas: {
+    display: 'block',
+    margin: 'auto',
+  },
+});
+
 type Props = {
   gameDimensions: Vector2;
+  maxWidthPx: number;
 }
 
-export const ResponsiveCanvas = ({ gameDimensions }: Props) => {
+export const ResponsiveCanvas = ({ gameDimensions, maxWidthPx = 1500 }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+  const classes = useStyles();
+
   useEffect(() => {
     const aspectRatio = gameDimensions.x / gameDimensions.y;
     const canvas = canvasRef.current!;
@@ -32,13 +42,14 @@ export const ResponsiveCanvas = ({ gameDimensions }: Props) => {
     context.scale(CANVAS_SHARPNESS_FACTOR, CANVAS_SHARPNESS_FACTOR);
 
     const onWindowResize = () => {
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerWidth / aspectRatio}px`;
+      const newWidth = Math.min(window.innerWidth, maxWidthPx);
+      canvas.style.width = `${newWidth}px`;
+      canvas.style.height = `${newWidth / aspectRatio}px`;
     };
     onWindowResize();
     window.addEventListener('resize', onWindowResize);
     return () => window.removeEventListener('resize', onWindowResize);
   }, []);
 
-  return (<canvas ref={canvasRef} />);
+  return (<canvas ref={canvasRef} className={classes.canvas} />);
 };
