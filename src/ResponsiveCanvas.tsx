@@ -13,7 +13,7 @@ const useStyles = createUseStyles({
 
 type Props = {
   gameDimensions: Vector2;
-  maxWidthPx: number;
+  maxWidthPx?: number;
 }
 
 export const ResponsiveCanvas = ({ gameDimensions, maxWidthPx = 1500 }: Props) => {
