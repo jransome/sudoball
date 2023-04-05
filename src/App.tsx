@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
 import { GAME_BOUNDARY_DIMENSIONS, Team } from './config';
-import { ConnectionClient } from './rtc/ConnectionClient';
-import { ConnectionHost } from './rtc/ConnectionHost';
+import { RTCHost } from './RTCHost';
+import { RTCClient } from './RTCClient';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
 import { GameEngine } from './game';
 import { getLocalInput } from './controls';
 import { PeerId, RTCClientInput, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
 import { CanvasPainter } from './CanvasPainter';
 import { ParticipantManager } from './participants';
+import { generateReadableId } from './id';
 
 const useStyles = createUseStyles({
   controls: {
@@ -23,13 +24,13 @@ const useStyles = createUseStyles({
   },
 });
 
-const startEngine = (host: ConnectionHost) => {
+const startEngine = (host: RTCHost) => {
   GameEngine.on('update', (gameState, applyInputs) => {
     const playerInputs = ParticipantManager.HostInterface.playerInputs.set(host.peerId, getLocalInput());
     applyInputs(playerInputs);
 
     host.broadcast({ type: 'GAME_UPDATE', payload: gameState });
-    CanvasPainter.paint(gameState);
+    CanvasPainter.paintGameState(gameState);
   });
 
   // GameEngine.on('gameEvent', (gameEvent) => {
@@ -57,8 +58,9 @@ const App = () => {
   const [clients, setClients] = useState<string[]>([]);
 
   const createGame = () => {
-    const rtc = new ConnectionHost();
-    ParticipantManager.reset(rtc.peerId);
+    const hostId = generateReadableId();
+    const rtc = new RTCHost(hostId);
+    ParticipantManager.reset(hostId);
 
     startEngine(rtc);
 
@@ -85,16 +87,17 @@ const App = () => {
 
     rtc.startHosting();
 
-    setHostId(rtc.peerId);
+    setHostId(hostId);
   };
 
   const joinGame = async (hostId: string) => {
-    const rtc = new ConnectionClient();
-    ParticipantManager.reset(rtc.peerId);
+    const peerId = generateReadableId();
+    const rtc = new RTCClient(peerId);
+    ParticipantManager.reset(peerId);
 
     const onGameUpdate = (message: RTCGameUpdate) => {
       rtc.sendToHost({ type: 'CLIENT_INPUT', payload: getLocalInput() });
-      CanvasPainter.paint(message.payload);
+      CanvasPainter.paintGameState(message.payload);
     };
     const onLineupChange = (message: RTCPlayerLineupChanged) => {
       ParticipantManager.ClientInterface.participants = new Map(message.payload);
@@ -115,7 +118,7 @@ const App = () => {
       handler(message);
     });
 
-    rtc.on('disconnected', () => setIsConnected(false));
+    rtc.on('disconnected', () => setIsConnected(false)); // TODO: update canvas
     await rtc.connectToHost(hostId);
     setIsConnected(true);
   };

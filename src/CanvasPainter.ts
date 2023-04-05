@@ -46,7 +46,7 @@ const paintPlayer = (ctx: CanvasRenderingContext2D, position: Vector2, playerNam
   ctx.fillText(playerName, position.x, position.y + 30);
 };
 
-const paint = (gameState: BroadcastedGameState) => {
+const paintGameState = (gameState: BroadcastedGameState) => {
   if (!ctx) {
     console.error('tried to paint but no canvas context set!');
     return;
@@ -77,5 +77,5 @@ const paint = (gameState: BroadcastedGameState) => {
 
 export const CanvasPainter = {
   setContext,
-  paint,
+  paintGameState,
 };
