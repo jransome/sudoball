@@ -46,12 +46,7 @@ const paintPlayer = (ctx: CanvasRenderingContext2D, position: Vector2, playerNam
   ctx.fillText(playerName, position.x, position.y + 30);
 };
 
-const paintGameState = (gameState: BroadcastedGameState) => {
-  if (!ctx) {
-    console.error('tried to paint but no canvas context set!');
-    return;
-  }
-
+const paint = (gameState: BroadcastedGameState) => {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   renderablePitch.polygons.forEach(b => paintPolygon(ctx, 'black', 'white', b));
   renderablePitch.circles.forEach(b => paintCircle(ctx, 'black', 'white', b));
@@ -73,6 +68,14 @@ const paintGameState = (gameState: BroadcastedGameState) => {
     );
   });
   paintCircle(ctx, 'white', 'white', { position: gameState.ball, radius: BALL_RADIUS });
+};
+
+const paintGameState = (gameState: BroadcastedGameState) => {
+  if (!ctx) {
+    console.error('tried to paint but no canvas context set!');
+    return;
+  }
+  window.requestAnimationFrame(() => paint(gameState)); // we are already inside a RAF when run on the host so technically rendering will take place on the next frame
 };
 
 export const CanvasPainter = {
