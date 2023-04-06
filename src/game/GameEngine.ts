@@ -24,7 +24,7 @@ export type PlayerGameObject = {
   lastKick: number;
 }
 
-const engineTickPeriod = 1000 / GAME_FRAMERATE_HZ;
+const MS_PER_FRAME = 1000 / GAME_FRAMERATE_HZ;
 const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
 
 class Engine extends EventEmitter<GameEngineEvents> {
@@ -67,15 +67,27 @@ class Engine extends EventEmitter<GameEngineEvents> {
         }
       });
 
-    this.gameIntervalId = window.setInterval(() => {
+    const gameTick = (deltaTime: DOMHighResTimeStamp) => {
       const gameState = {
         ball: round(ball.position),
         players: Array.from(this.players).map(serialisePlayers),
       };
 
       this.emit('update', gameState, applyInputs);
-      Matter.Engine.update(this.engine, engineTickPeriod);
-    }, engineTickPeriod);
+      Matter.Engine.update(this.engine, deltaTime);
+    };
+
+    const onAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
+      const deltaTime = timestamp - lastFrameTimeMs;
+      if (deltaTime > MS_PER_FRAME) {
+        gameTick(deltaTime);
+        lastFrameTimeMs = timestamp - (deltaTime % MS_PER_FRAME);
+      }
+      window.requestAnimationFrame(onAnimationFrame);
+    };
+
+    let lastFrameTimeMs: DOMHighResTimeStamp = performance.now();
+    onAnimationFrame(lastFrameTimeMs);
   }
 
   public stop() {
