@@ -28,7 +28,7 @@ const MS_PER_FRAME = 1000 / GAME_FRAMERATE_HZ;
 const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
 
 class Engine extends EventEmitter<GameEngineEvents> {
-  private gameIntervalId!: number;
+  private isRunning = false;
   private players: Map<PeerId, PlayerGameObject> = new Map();
   private engine!: Matter.Engine;
 
@@ -78,6 +78,7 @@ class Engine extends EventEmitter<GameEngineEvents> {
     };
 
     const onAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
+      if (!this.isRunning) return;
       const deltaTime = timestamp - lastFrameTimeMs;
       if (deltaTime > MS_PER_FRAME) {
         gameTick(deltaTime);
@@ -86,14 +87,13 @@ class Engine extends EventEmitter<GameEngineEvents> {
       window.requestAnimationFrame(onAnimationFrame);
     };
 
+    this.isRunning = true;
     let lastFrameTimeMs: DOMHighResTimeStamp = performance.now();
     onAnimationFrame(lastFrameTimeMs);
   }
 
   public stop() {
-    if (this.gameIntervalId)
-      window.clearInterval(this.gameIntervalId);
-
+    this.isRunning = false;
     // TODO: teardown engine
   }
 
