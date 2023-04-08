@@ -12,7 +12,6 @@ export const PLAYER_DRAG = 0.07;
 export const MOVE_FORCE = 0.4;
 
 export const KICK_FORCE = 0.15;
-export const KICK_COOLDOWN_MS = 250;
 export const KICK_RADIUS = 16;
 
 export const BALL_RADIUS = 7;

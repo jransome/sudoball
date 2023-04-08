@@ -2,19 +2,13 @@ import RAPIER from '@dimforge/rapier2d';
 import { EventEmitter } from '../Events';
 import { Team, GAME_BOUNDARY_DIMENSIONS, MOVE_FORCE, KICK_FORCE } from '../config';
 import { BroadcastedGameState, PeerId, Input } from '../types';
+import { PlayerGameObject } from './GameEngine';
 import { createBallBody, scale, createPlayerBody, createGameBoundary, subtract, sqrMagnitude, normalise } from './helpers';
 import { pitchBodies } from './pitch';
-import { getLocalInput } from '../input';
 
 type GameEngineEvents = {
   update: (gameState: BroadcastedGameState) => void;
   gameEvent: (eventName: string) => void;
-}
-
-export type PlayerGameObject = {
-  team: Team;
-  // body: Matter.Body;
-  // isKicking: boolean;
 }
 
 class Engine extends EventEmitter<GameEngineEvents> {
@@ -31,80 +25,29 @@ class Engine extends EventEmitter<GameEngineEvents> {
 
   public start(localPlayerId: PeerId, team = Team.Blue) {
 
-    let history = [];
+    const world = new RAPIER.World({ x: 0, y: -9 });
 
-    let world = new RAPIER.World({ x: 0, y: 0 });
+    const groundColliderDesc = RAPIER.ColliderDesc.cuboid(10.0, 0.5);
+    world.createCollider(groundColliderDesc);
+    
+    // Create a dynamic rigid-body.
+    const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
+      .setTranslation(0.0, 2.0);
+    const rigidBody = world.createRigidBody(rigidBodyDesc);
+    
+    // Create a cuboid collider attached to the dynamic rigidBody.
 
-    // outer bounds
-    const halfBoundsDimensions = { x: 100, y: 50 };
-    const bounds = [
-      [{ x: 0, y: 0 }, { x: 0, y: 1 }], // top
-      [{ x: 0, y: halfBoundsDimensions.y * 2 }, { x: 0, y: -1 }], // bottom
-      [{ x: 0, y: 0 }, { x: 1, y: 0 }], // left
-      [{ x: halfBoundsDimensions.x * 2, y: 0 }, { x: -1, y: 0 }], // right
-    ];
-    bounds.forEach(([position, normal]) => world.createCollider(
-      RAPIER.ColliderDesc.halfspace(normal),
-      world.createRigidBody(RAPIER.RigidBodyDesc.fixed()
-        .setTranslation(position.x, position.y)),
-    ));
-
-    // pitch
-
-    // ball
-    const ballRb = world.createRigidBody(
-      RAPIER.RigidBodyDesc.dynamic()
-        .setTranslation(halfBoundsDimensions.x, halfBoundsDimensions.y)
-        .setLinearDamping(0.5),
-    );
-    const ballHandle = ballRb.handle;
-
-    const ballCollider = world.createCollider(
-      RAPIER.ColliderDesc.ball(0.1),
-      ballRb,
-    );
-
-    setInterval(() => {
-      const i = Math.floor(Math.random() * history.length);
-      console.log('rolling back', {
-        i,
-        historyLength: history.length,
-      });
-      rollback(i);
-    }, 5000);
-
-    const rollback = (stateIndex) => {
-      history = history.slice(stateIndex);
-      world = RAPIER.World.restoreSnapshot(history[0].snapshot);
-      const b = world.getRigidBody(ballHandle);
-      history.slice(1).forEach(({ input }) => {
-        b.addForce({ x: input.x, y: input.y }, true);
-        world.step();
-        b.resetForces(true);
-      });
-    };
-
+    // Game loop. Replace by your own game loop system.
     const gameLoop = () => {
-      const { x, y } = getLocalInput();
-      history.push({
-        input: { x, y },
-        snapshot: world.takeSnapshot(),
-      });
-
-      const b = world.getRigidBody(ballHandle);
-      b.addForce({ x, y }, true);
       world.step();
-      b.resetForces(true);
-      const gameState = {
-        players: [],
-        ball: scale(b.translation(), 4),
-      };
-
-      this.emit('update', gameState);
-
+    
+      // Get and print the rigid-body's position.
+      const position = rigidBody.translation();
+      console.log('Rigid-body position: ', position.x, position.y);
+    
       setTimeout(gameLoop, 16);
     };
-
+    
     gameLoop();
 
 

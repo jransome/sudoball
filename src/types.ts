@@ -52,5 +52,5 @@ export type Participant = {
 }
 
 export type Input = Vector2 & {
-  isKicking: boolean;
+  kick: boolean;
 }

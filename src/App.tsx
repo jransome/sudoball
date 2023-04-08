@@ -5,7 +5,7 @@ import { RTCHost } from './RTCHost';
 import { RTCClient } from './RTCClient';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
 import { GameEngine } from './game';
-import { getLocalInput } from './controls';
+import { getLocalInput } from './input';
 import { PeerId, RTCClientInput, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
 import { CanvasPainter } from './CanvasPainter';
 import { ParticipantManager } from './participants';
@@ -25,9 +25,9 @@ const useStyles = createUseStyles({
 });
 
 const startEngine = (host: RTCHost) => {
-  GameEngine.on('update', (gameState, applyInputs) => {
+  GameEngine.on('update', (gameState) => {
     const playerInputs = ParticipantManager.HostInterface.playerInputs.set(host.peerId, getLocalInput());
-    applyInputs(playerInputs);
+    // applyInputs(playerInputs);
 
     host.broadcast({ type: 'GAME_UPDATE', payload: gameState });
     CanvasPainter.paintGameState(gameState);

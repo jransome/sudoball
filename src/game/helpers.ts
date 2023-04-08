@@ -45,6 +45,7 @@ export const createGameBoundary = (dimensions: Vector2, boundaryThickness = 40) 
 };
 
 export const createBallBody = (position: Vector2) => Matter.Bodies.circle(position.x, position.y, BALL_RADIUS, {
+  label: 'BALL',
   restitution: BALL_BOUNCINESS,
   mass: BALL_MASS,
   frictionAir: BALL_DRAG,
@@ -54,6 +55,7 @@ export const createBallBody = (position: Vector2) => Matter.Bodies.circle(positi
 });
 
 export const createPlayerBody = (position: Vector2) => Matter.Bodies.circle(position.x, position.y, PLAYER_RADIUS, {
+  label: 'LOCAL_PLAYER',
   restitution: 0,
   mass: PLAYER_MASS,
   frictionAir: PLAYER_DRAG,
