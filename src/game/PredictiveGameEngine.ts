@@ -22,7 +22,7 @@ type GameEngineEvents = {
 const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
 const MS_PER_FRAME = 1000 / GAME_FRAMERATE_HZ;
 
-export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
+export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
   private localPlayerId: PeerId;
   private isRunning = false;
   private world: RAPIER.World;
@@ -30,8 +30,9 @@ export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
 
   private ballHandle: number;
 
+  private lastAuthoritativeUpdateIndex = 0;
   private peerIdWorldHandleMap = new Map<PeerId, number>();
-  private lastKnownPlayerInputs: PlayerInputsSnapshot = {};
+  private lastKnownPlayerInputs: PlayerInputsSnapshot = {}; // TODO make this an array?
 
   constructor(localPlayerId: PeerId) {
     super();
@@ -87,6 +88,8 @@ export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
     });
 
 
+
+
     // setTimeout(() => {
     //   setInterval(() => {
     //     // const i = Math.floor(Math.random() * history.length);
@@ -98,6 +101,7 @@ export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
     //     rollback(i);
     //   }, 200);
     // }, 3000);
+
 
     const gameTick = (tickIndex: number) => {
       if (!this.isRunning) return;
@@ -138,6 +142,52 @@ export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
     this.world.free();
   }
 
+  public reconcileAuthoritativeUpdate(inputs: PlayerInputsSnapshot) {
+    if (inputs[this.localPlayerId].i !== this.lastAuthoritativeUpdateIndex + 1) {
+      throw new Error('Out of order state update from host');
+    }
+    // should we also check the ball position?
+
+    // check if there are divergences, if yes replay
+    const playerCountEqual = Object.keys(this.lastKnownPlayerInputs).length === Object.keys(inputs).length;
+    const predictionsCorrect = playerCountEqual && Object
+      .entries(inputs)
+      .some(([peerId, input]) => {
+        const lastInput = this.lastKnownPlayerInputs[peerId];
+        return lastInput
+          && lastInput.movement.x === input.movement.x
+          && lastInput.movement.y === input.movement.y
+          && lastInput.kick === input.kick;
+      });
+
+    if (predictionsCorrect) {
+      return;
+    }
+
+    // remove dropped player(s)
+    if (!playerCountEqual) {
+      Object
+        .keys(this.lastKnownPlayerInputs)
+        .filter(id => !Object.keys(inputs).includes(id))
+        .forEach(missingId => this.world.removeRigidBody(
+          this.world.getRigidBody(this.peerIdWorldHandleMap.get(missingId)!),
+        ));
+    }
+
+    this.lastKnownPlayerInputs = inputs;
+    this.replayFromIndex(inputs[this.localPlayerId].i);
+    this.lastAuthoritativeUpdateIndex++;
+  }
+
+  private replayFromIndex(index: number) {
+    this.stateInputHistory = this
+      .stateInputHistory
+      .slice(this.stateInputHistory.findIndex(h => h.localInput.i === index));
+
+    this.world = RAPIER.World.restoreSnapshot(this.stateInputHistory[0].snapshot);
+    this.stateInputHistory.forEach(({ localInput }) => this.updateWorld(localInput));
+  }
+
   private updateWorld(localInput: TransmittedInput): RenderableGameState {
     // apply local player input and last known inputs of all other players
     this.lastKnownPlayerInputs[this.localPlayerId] = localInput;
@@ -160,7 +210,7 @@ export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
   }
 
   private applyInputs(input: TransmittedInput, player: RAPIER.RigidBody, ball: RAPIER.RigidBody) {
-    player.applyImpulse(scale(input.movement, 0.5), true);
+    player.applyImpulse(scale(input.movement, 0.05), true);
 
     if (input.kick) {
       const distanceVector = subtract(ball.translation(), player.translation());

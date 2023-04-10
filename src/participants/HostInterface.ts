@@ -1,12 +1,12 @@
 import { Team } from '../config';
-import { GameEngine } from '../game/GameEngine';
+import { PredictiveGameEngine } from '../game/PredictiveGameEngine';
 import { PeerId, Input } from '../types';
 import { participants } from './participants';
 
 const playerInputs = new Map<PeerId, Input>();
 
 const add = (id: PeerId, team: Team) => {
-  GameEngine.addPlayer(id, team);
+  PredictiveGameEngine.addPlayer(id, team);
   participants.instance.set(id, {
     name: id,
     team,
@@ -14,7 +14,7 @@ const add = (id: PeerId, team: Team) => {
 };
 
 const remove = (id: PeerId) => {
-  GameEngine.removePlayer(id);
+  PredictiveGameEngine.removePlayer(id);
   participants.instance.delete(id);
   playerInputs.delete(id);
 };

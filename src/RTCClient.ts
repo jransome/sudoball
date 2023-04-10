@@ -31,7 +31,10 @@ export class RTCClient extends EventEmitter<ConnectionClientEvents> {
 
     await this.peerOpened;
 
-    this.connection = this.peerInstance.connect(hostId, { label: this.peerId });
+    this.connection = this.peerInstance.connect(hostId, {
+      label: this.peerId,
+      reliable: true,
+    });
 
     this.connectionEstablished = new Promise((res) => {
       this.connection.on('open', () => {

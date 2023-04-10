@@ -4,12 +4,13 @@ import { GAME_BOUNDARY_DIMENSIONS, Team } from './config';
 import { RTCHost } from './RTCHost';
 import { RTCClient } from './RTCClient';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
-import { GameEngine } from './game';
-import { getLocalInput } from './input';
-import { PeerId, RTCClientInput, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
+// import { GameEngine } from './game';
+import { PeerId, PlayerInputsSnapshot, RTCAuthoritativeUpdate, RTCClientMessage, RTCGameStarted, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
 import { CanvasPainter } from './CanvasPainter';
 import { ParticipantManager } from './participants';
 import { generateReadableId } from './id';
+import { PredictiveGameEngine } from './game';
+import { AuthoritativeGameEngine } from './game/AuthoritativeGameEngine';
 
 const useStyles = createUseStyles({
   controls: {
@@ -24,30 +25,7 @@ const useStyles = createUseStyles({
   },
 });
 
-const startEngine = (host: RTCHost) => {
-  GameEngine.on('update', (gameState) => {
-    const playerInputs = ParticipantManager.HostInterface.playerInputs.set(host.peerId, getLocalInput());
-    // applyInputs(playerInputs);
-
-    host.broadcast({ type: 'GAME_UPDATE', payload: gameState });
-    CanvasPainter.paintGameState(gameState);
-  });
-
-  // GameEngine.on('gameEvent', (gameEvent) => {
-  //   /**
-  //    * any event that changes the ui, eg:
-  //    * game started
-  //    * goal scored
-  //    * game ended
-  //   */
-  // });
-
-  ParticipantManager.HostInterface.add(
-    host.peerId,
-    host.clients.length % 2 === 0 ? Team.Red : Team.Blue,
-  );
-  GameEngine.start();
-};
+const playerInputsSnapshot: PlayerInputsSnapshot = {};
 
 const App = () => {
   const classes = useStyles();
@@ -55,57 +33,124 @@ const App = () => {
   const [hostId, setHostId] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [attemptingConnection, setAttemptingConnection] = useState(false);
-  const [clients, setClients] = useState<string[]>([]);
+  const [participants, setParticipants] = useState<Record<PeerId, { name: string; team: Team; }>>({});
+
+  const [rtcHost, setRtcHost] = useState<RTCHost>();
+
+
+  const startGame = () => {
+    // let isLagging = false;
+    // setInterval(() => {
+    //   console.log('oopsie');
+    //   isLagging = true;
+    //   setTimeout(() => {
+    //     isLagging = false;
+    //   }, 500);
+    // }, 5000);
+    const initPlayer = Object.entries(participants).map(([peerId, { name, team }]) => ({ peerId, name, team }));
+
+    rtcHost!.broadcast({ type: 'START', payload: initPlayer });
+
+    const game = new AuthoritativeGameEngine(hostId);
+
+    game.on('update', (localInput, renderableGameState) => {
+      // if (!isLagging) 
+      playerInputsSnapshot[hostId] = localInput;
+      rtcHost!.broadcast({ type: 'UPDATE', payload: playerInputsSnapshot });
+      CanvasPainter.paintGameState(renderableGameState);
+    });
+
+    game.start(initPlayer);
+
+    // GameEngine.on('gameEvent', (gameEvent) => {
+    //   /**
+    //    * any event that changes the ui, eg:
+    //    * game started
+    //    * goal scored
+    //    * game ended
+    //   */
+    // });
+
+    // ParticipantManager.HostInterface.add(
+    //   host.peerId,
+    //   host.clients.length % 2 === 0 ? Team.Red : Team.Blue,
+    // );
+    // GameEngine.start();
+  };
 
   const createGame = () => {
     const hostId = generateReadableId();
+    setHostId(hostId);
     const rtc = new RTCHost(hostId);
-    ParticipantManager.reset(hostId);
+    setRtcHost(rtc);
+    // ParticipantManager.reset(hostId);
 
-    startEngine(rtc);
+    setParticipants(prev => ({
+      ...prev,
+      [hostId]: { name: hostId, team: Team.Blue },
+    }));
 
     rtc.on('clientConnected', (id) => {
-      setClients(rtc.clients);
+      setParticipants(prev => ({
+        ...prev,
+        [id]: { name: id, team: Team.Blue },
+      }));
       setIsConnected(true);
-      ParticipantManager.HostInterface.add(
-        id,
-        rtc.clients.length % 2 === 0 ? Team.Red : Team.Blue,
-      );
-      rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
+      // ParticipantManager.HostInterface.add(
+      //   id,
+      //   rtc.clients.length % 2 === 0 ? Team.Red : Team.Blue,
+      // );
+      // rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
     });
 
     rtc.on('clientDisconnected', (id) => {
-      setClients(rtc.clients);
+      setParticipants((prev) => {
+        delete prev[id];
+        return prev;
+      });
       setIsConnected(rtc.clients.length > 0);
-      ParticipantManager.HostInterface.remove(id);
-      rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
+      // ParticipantManager.HostInterface.remove(id);
+      // rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
     });
 
-    rtc.on('clientMessage', (clientId: PeerId, message: RTCClientInput) => {
-      ParticipantManager.HostInterface.playerInputs.set(clientId, message.payload);
+    rtc.on('clientMessage', (clientId: PeerId, message: RTCClientMessage) => {
+      // ParticipantManager.HostInterface.playerInputs.set(clientId, message.payload);
+      if (message.type === 'CLIENT_INPUT') {
+        playerInputsSnapshot[clientId] = message.payload;
+      }
     });
 
     rtc.startHosting();
-
-    setHostId(hostId);
   };
 
   const joinGame = async (hostId: string) => {
     const peerId = generateReadableId();
     const rtc = new RTCClient(peerId);
-    ParticipantManager.reset(peerId);
+    const game = new PredictiveGameEngine(peerId);
+    // ParticipantManager.reset(peerId);
 
-    const onGameUpdate = (message: RTCGameUpdate) => {
-      rtc.sendToHost({ type: 'CLIENT_INPUT', payload: getLocalInput() });
-      CanvasPainter.paintGameState(message.payload);
+    game.on('update', (localInput, renderableState) => {
+      rtc.sendToHost({ type: 'CLIENT_INPUT', payload: localInput });
+      CanvasPainter.paintGameState(renderableState);
+    });
+
+    const onGameStart = (message: RTCGameStarted) => {
+      game.start(message.payload);
     };
+
+    const onAuthoritativeUpdate = (message: RTCAuthoritativeUpdate) => {
+      game.reconcileAuthoritativeUpdate(message.payload);
+    };
+
     const onLineupChange = (message: RTCPlayerLineupChanged) => {
-      ParticipantManager.ClientInterface.participants = new Map(message.payload);
+      // show lineup change in ui.
+      // ParticipantManager.ClientInterface.participants = new Map(message.payload);
     };
 
     type HostMessageHandler = (message: RTCHostMessage) => void;
     const hostMessageHandlers: Record<RTCHostMessageType, HostMessageHandler> = {
-      GAME_UPDATE: onGameUpdate as HostMessageHandler,
+      START: onGameStart as HostMessageHandler,
+      UPDATE: onAuthoritativeUpdate as HostMessageHandler,
       PLAYER_LINEUP_CHANGE: onLineupChange as HostMessageHandler,
     };
 
@@ -141,26 +186,39 @@ const App = () => {
           Create Game
         </button>
 
-        <button
-          id='join-game'
-          onClick={() => {
-            joinGame(hostId);
-            setAttemptingConnection(true);
-          }}
-          disabled={!hostId || attemptingConnection || isConnected}
-        >
-          Join Game
-        </button>
+        {!rtcHost &&
+          <button
+            id='join-game'
+            onClick={() => {
+              joinGame(hostId);
+              setAttemptingConnection(true);
+            }}
+            disabled={!hostId || attemptingConnection || isConnected}
+          >
+            Join Game
+          </button>
+        }
         <input id='host-id' type='text' value={hostId} onChange={ev => setHostId(ev.target.value)} />
         <button onClick={() => navigator.clipboard.writeText(hostId)}>copy</button>
+        {rtcHost &&
+          <button
+            id='start-game'
+            onClick={() => {
+              startGame();
+            }}
+            // disabled={!hostId || attemptingConnection || isConnected}
+          >
+            Start Game
+          </button>
+        }
 
       </div>
       <ResponsiveCanvas gameDimensions={GAME_BOUNDARY_DIMENSIONS} />
 
-      <h4>Connected to:</h4>
+      <h4>Players:</h4>
       <ul>
-        {clients.map((c, i) => <li key={i}>{c}</li>)}
-        {isConnected && !clients.length && <li>host</li>}
+        {Object.entries(participants).map(([peerId, { name }], i) => <li key={i}>{name} | {peerId} {peerId === hostId && '(you)'}</li>)}
+        {isConnected && !participants.length && <li>host</li>}
       </ul>
     </>
   );

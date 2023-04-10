@@ -24,7 +24,9 @@ document.addEventListener('keyup', (event) => {
 });
 
 export const getLocalInput = (): Input => ({
-  x: (Number(keyDownStates.ArrowLeft) * -1) + Number(keyDownStates.ArrowRight),
-  y: (Number(keyDownStates.ArrowUp) * -1) + Number(keyDownStates.ArrowDown),
+  movement: {
+    x: (Number(keyDownStates.ArrowLeft) * -1) + Number(keyDownStates.ArrowRight),
+    y: (Number(keyDownStates.ArrowUp) * -1) + Number(keyDownStates.ArrowDown),
+  },
   kick: keyDownStates.Space,
 });

@@ -1,13 +1,13 @@
 import RAPIER from '@dimforge/rapier2d';
 import { EventEmitter } from '../Events';
 import { Team, GAME_BOUNDARY_DIMENSIONS, MOVE_FORCE, KICK_FORCE } from '../config';
-import { BroadcastedGameState, PeerId, Input } from '../types';
-import { PlayerGameObject } from './GameEngine';
+import { RenderableGameState, PeerId, Input } from '../types';
+import { PlayerGameObject } from './PredictiveGameEngine';
 import { createBallBody, scale, createPlayerBody, createGameBoundary, subtract, sqrMagnitude, normalise } from './helpers';
 import { pitchBodies } from './pitch';
 
 type GameEngineEvents = {
-  update: (gameState: BroadcastedGameState) => void;
+  update: (gameState: RenderableGameState) => void;
   gameEvent: (eventName: string) => void;
 }
 

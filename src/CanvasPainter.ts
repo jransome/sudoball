@@ -1,7 +1,7 @@
 import { BALL_RADIUS, KICK_RADIUS, PLAYER_RADIUS, Team } from './config';
 import { renderablePitch } from './game';
 import { ParticipantManager } from './participants';
-import { BroadcastedGameState, Circle, Polygon, Vector2 } from './types';
+import { RenderableGameState, Circle, Polygon, Vector2 } from './types';
 
 type ShapePainter<T extends Circle | Polygon> = (
   ctx: CanvasRenderingContext2D,
@@ -46,23 +46,23 @@ const paintPlayer = (ctx: CanvasRenderingContext2D, position: Vector2, playerNam
   ctx.fillText(playerName, position.x, position.y + 30);
 };
 
-const paint = (gameState: BroadcastedGameState) => {
+const paint = (gameState: RenderableGameState) => {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   renderablePitch.polygons.forEach(b => paintPolygon(ctx, 'black', 'white', b));
   renderablePitch.circles.forEach(b => paintCircle(ctx, 'black', 'white', b));
 
   gameState.players.forEach((p) => {
-    if (!ParticipantManager.participants.has(p.id)) {
-      console.error('tried to paint a player that doesn\'t exist!', ParticipantManager.participants);
-      return;
-    }
+    // if (!ParticipantManager.participants.has(p.id)) {
+    //   console.error('tried to paint a player that doesn\'t exist!', ParticipantManager.participants);
+    //   return;
+    // }
 
-    const participantInfo = ParticipantManager.participants.get(p.id)!;
+    // const participantInfo = ParticipantManager.participants.get(p.id)!;
     paintPlayer(
       ctx,
       p.position,
-      participantInfo.name,
-      TEAM_COLOURS[participantInfo.team],
+      p.id,
+      TEAM_COLOURS[p.team],
       p.isKicking ? 'white' : 'black',
       p.id === ParticipantManager.selfPeerId,
     );
@@ -70,11 +70,12 @@ const paint = (gameState: BroadcastedGameState) => {
   paintCircle(ctx, 'white', 'white', { position: gameState.ball, radius: BALL_RADIUS });
 };
 
-const paintGameState = (gameState: BroadcastedGameState) => {
+const paintGameState = (gameState: RenderableGameState) => {
   if (!ctx) {
     console.error('tried to paint but no canvas context set!');
     return;
   }
+  // paint(gameState);
   window.requestAnimationFrame(() => paint(gameState)); // we are already inside a RAF when run on the host so technically rendering will take place on the next frame
 };
 

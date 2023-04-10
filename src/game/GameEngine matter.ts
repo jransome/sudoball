@@ -1,7 +1,7 @@
 import Matter from 'matter-js';
 import { MOVE_FORCE, GAME_BOUNDARY_DIMENSIONS, GAME_FRAMERATE_HZ, BALL_RADIUS, KICK_FORCE, Team, KICK_RADIUS } from '../config';
 import { EventEmitter } from '../Events';
-import { PeerId, BroadcastedGameState, Input, Vector2 } from '../types';
+import { PeerId, RenderableGameState, Input, Vector2 } from '../types';
 import { createGameBoundary, serialisePlayers, createBallBody, scale, subtract, normalise, sqrMagnitude, createPlayerBody, round } from './helpers';
 import { pitchBodies } from './pitch';
 import { getLocalInput } from '../input';
@@ -11,7 +11,7 @@ import { getLocalInput } from '../input';
 (Matter.Resolver as any)._restingThresh = 0.04;
 
 type GameEngineEvents = {
-  update: (gameState: BroadcastedGameState) => void;
+  update: (gameState: RenderableGameState) => void;
   gameEvent: (eventName: string) => void;
 }
 

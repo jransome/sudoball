@@ -1,7 +1,7 @@
 import Matter, { IChamferableBodyDefinition } from 'matter-js';
 import { BALL_BOUNCINESS, BALL_DRAG, BALL_MASS, BALL_RADIUS, PLAYER_DRAG, PLAYER_MASS, PLAYER_RADIUS } from '../config';
 import { Vector2, PeerId } from '../types';
-import { PlayerGameObject } from './GameEngine';
+import { PlayerGameObject } from './PredictiveGameEngine';
 import { collisionFilters } from './collisionFilters';
 
 export const { normalise, mult: scale, sub: subtract, magnitudeSquared: sqrMagnitude } = Matter.Vector;
