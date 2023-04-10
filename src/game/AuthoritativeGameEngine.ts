@@ -15,7 +15,7 @@ const normalise = (vector: Vector2) => {
 };
 
 type GameEngineEvents = {
-  update: (transmissibleInput: TransmittedInput, gameState: RenderableGameState) => void;
+  update: (lastKnownPlayerInputs: PlayerInputsSnapshot, gameState: RenderableGameState) => void;
   gameEvent: (eventName: string) => void;
 }
 
@@ -109,7 +109,7 @@ export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
         snapshot: this.world.takeSnapshot(),
       });
 
-      this.emit('update', localInput, this.updateWorld(localInput));
+      this.emit('update', this.lastKnownPlayerInputs, this.updateWorld(localInput));
       setTimeout(() => gameTick(tickIndex + 1), MS_PER_FRAME);
     };
 
@@ -136,6 +136,10 @@ export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
     this.removeAllListeners();
     this.isRunning = false;
     this.world.free();
+  }
+
+  public updateClientInput(peerId: PeerId, input: TransmittedInput) {
+    this.lastKnownPlayerInputs[peerId] = input;
   }
 
   private updateWorld(localInput: TransmittedInput): RenderableGameState {

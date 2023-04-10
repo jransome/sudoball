@@ -25,7 +25,7 @@ const useStyles = createUseStyles({
   },
 });
 
-const playerInputsSnapshot: PlayerInputsSnapshot = {};
+let hostGameInstance: AuthoritativeGameEngine = null!;
 
 const App = () => {
   const classes = useStyles();
@@ -48,19 +48,20 @@ const App = () => {
     //   }, 500);
     // }, 5000);
     const initPlayer = Object.entries(participants).map(([peerId, { name, team }]) => ({ peerId, name, team }));
-
+    // playerInputsSnapshot = Object.keys(participants).map(pId => [pId, get])
     rtcHost!.broadcast({ type: 'START', payload: initPlayer });
 
-    const game = new AuthoritativeGameEngine(hostId);
+    hostGameInstance = new AuthoritativeGameEngine(hostId);
 
-    game.on('update', (localInput, renderableGameState) => {
+    const otherId = Object.keys(participants).find(k => k !== hostId)!;
+    hostGameInstance.on('update', (lastKnownPlayerInputs, renderableGameState) => {
       // if (!isLagging) 
-      playerInputsSnapshot[hostId] = localInput;
-      rtcHost!.broadcast({ type: 'UPDATE', payload: playerInputsSnapshot });
+      console.dir('sending back', lastKnownPlayerInputs[otherId].i);
+      rtcHost!.broadcast({ type: 'UPDATE', payload: lastKnownPlayerInputs });
       CanvasPainter.paintGameState(renderableGameState);
     });
 
-    game.start(initPlayer);
+    hostGameInstance.start(initPlayer);
 
     // GameEngine.on('gameEvent', (gameEvent) => {
     //   /**
@@ -91,6 +92,8 @@ const App = () => {
     }));
 
     rtc.on('clientConnected', (id) => {
+      console.log(id, 'joined');
+
       setParticipants(prev => ({
         ...prev,
         [id]: { name: id, team: Team.Blue },
@@ -116,8 +119,12 @@ const App = () => {
     rtc.on('clientMessage', (clientId: PeerId, message: RTCClientMessage) => {
       // ParticipantManager.HostInterface.playerInputs.set(clientId, message.payload);
       if (message.type === 'CLIENT_INPUT') {
-        playerInputsSnapshot[clientId] = message.payload;
+        console.log('received', clientId, message.payload.i);
+        hostGameInstance && hostGameInstance.updateClientInput(clientId, message.payload);
       }
+
+      // console.log(message)
+      // rtc.broadcast(message);
     });
 
     rtc.startHosting();
@@ -128,6 +135,7 @@ const App = () => {
     const rtc = new RTCClient(peerId);
     const game = new PredictiveGameEngine(peerId);
     // ParticipantManager.reset(peerId);
+    console.log('me:', peerId);
 
     game.on('update', (localInput, renderableState) => {
       rtc.sendToHost({ type: 'CLIENT_INPUT', payload: localInput });
@@ -154,7 +162,22 @@ const App = () => {
       PLAYER_LINEUP_CHANGE: onLineupChange as HostMessageHandler,
     };
 
+    // let receivedCount = 0;
+    // setTimeout(() => {
+    //   const send = (i: number) => {
+    //     rtc.sendToHost({ clientCounter: i });
+    //     setTimeout(() => send(i + 1), 10);
+    //   };
+    //   send(0);
+    // }, 2000);
+
     rtc.on('hostMessage', (message: RTCHostMessage) => {
+      // console.log({
+      //   got: message.clientCounter,
+      //   receivedCount,
+      //   diff: receivedCount - message.clientCounter
+      // });
+      // receivedCount++;
       const handler = hostMessageHandlers[message.type];
       if (!handler) {
         console.error('received unprocessable message from host!', message);
@@ -206,7 +229,7 @@ const App = () => {
             onClick={() => {
               startGame();
             }}
-            // disabled={!hostId || attemptingConnection || isConnected}
+          // disabled={!hostId || attemptingConnection || isConnected}
           >
             Start Game
           </button>

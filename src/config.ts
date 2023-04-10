@@ -1,6 +1,6 @@
 export const CANVAS_SHARPNESS_FACTOR = 3;
 
-export const GAME_FRAMERATE_HZ = 60;
+export const GAME_FRAMERATE_HZ = 10;
 export const GAME_BOUNDARY_DIMENSIONS = { x: 800, y: 400 }; // defines the size of the game and aspect ratio of the canvas. The pitch will be contained within this.
 export const PITCH_MARGIN = { x: 40, y: 30 }; // gap between pitch boundaries (where the ball is constrained) and the game boundaries (where players are constrained)
 export const GOAL_WIDTH = 100; // must be less than game dimensions y - (2 * pitch buffer.y)

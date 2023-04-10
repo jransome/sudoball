@@ -1,5 +1,6 @@
 import { BALL_RADIUS, KICK_RADIUS, PLAYER_RADIUS, Team } from './config';
 import { renderablePitch } from './game';
+import { scale } from './game/helpers';
 import { ParticipantManager } from './participants';
 import { RenderableGameState, Circle, Polygon, Vector2 } from './types';
 
@@ -60,7 +61,7 @@ const paint = (gameState: RenderableGameState) => {
     // const participantInfo = ParticipantManager.participants.get(p.id)!;
     paintPlayer(
       ctx,
-      p.position,
+      scale(p.position, 4),
       p.id,
       TEAM_COLOURS[p.team],
       p.isKicking ? 'white' : 'black',

@@ -25,12 +25,13 @@ const MS_PER_FRAME = 1000 / GAME_FRAMERATE_HZ;
 export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
   private localPlayerId: PeerId;
   private isRunning = false;
+  private isReplaying = false;
   private world: RAPIER.World;
   private stateInputHistory: Array<{ localInput: TransmittedInput; snapshot: Uint8Array; }> = [];
 
   private ballHandle: number;
 
-  private lastAuthoritativeUpdateIndex = 0;
+  private lastAuthoritativeUpdateIndex = -1;
   private peerIdWorldHandleMap = new Map<PeerId, number>();
   private lastKnownPlayerInputs: PlayerInputsSnapshot = {}; // TODO make this an array?
 
@@ -79,7 +80,7 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
           .setLinearDamping(0.5),
       );
       this.peerIdWorldHandleMap.set(peerId, playerRb.handle);
-      this.lastKnownPlayerInputs[peerId] = { i: 0, kick: false, movement: { x: 0, y: 0 } };
+      this.lastKnownPlayerInputs[peerId] = { i: -1, kick: false, movement: { x: 0, y: 0 } };
 
       this.world.createCollider(
         RAPIER.ColliderDesc.ball(0.2),
@@ -106,19 +107,21 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
     const gameTick = (tickIndex: number) => {
       if (!this.isRunning) return;
 
-      const localInput = { i: tickIndex, ...getLocalInput() };
+      if (!this.isReplaying) {
+        const localInput = { i: tickIndex, ...getLocalInput() };
 
-      this.stateInputHistory.push({
-        localInput,
-        snapshot: this.world.takeSnapshot(),
-      });
+        this.stateInputHistory.push({
+          localInput,
+          snapshot: this.world.takeSnapshot(),
+        });
 
-      this.emit('update', localInput, this.updateWorld(localInput));
+        this.emit('update', localInput, this.updateWorld(localInput));
+      }
       setTimeout(() => gameTick(tickIndex + 1), MS_PER_FRAME);
     };
 
     this.isRunning = true;
-    gameTick(0);
+    gameTick(1);
 
     // const onAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
     //   // if (!this.isRunning) return;
@@ -143,16 +146,26 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
   }
 
   public reconcileAuthoritativeUpdate(inputs: PlayerInputsSnapshot) {
-    if (inputs[this.localPlayerId].i !== this.lastAuthoritativeUpdateIndex + 1) {
-      throw new Error('Out of order state update from host');
-    }
+    // return;
+
+    // if (inputs[this.localPlayerId].i !== this.lastAuthoritativeUpdateIndex + 1) {
+      console.log('order',{
+        expected: this.lastAuthoritativeUpdateIndex + 1,
+        received: inputs[this.localPlayerId].i,
+        diff: this.lastAuthoritativeUpdateIndex + 1 - inputs[this.localPlayerId].i,
+      });
+      // console.warn(`Received stale update from host, ${(this.lastAuthoritativeUpdateIndex + 1) - inputs[this.localPlayerId].i} frame(s) behind expected.`);
+      // return;
+    // }
+    this.lastAuthoritativeUpdateIndex++;
+
     // should we also check the ball position?
 
     // check if there are divergences, if yes replay
     const playerCountEqual = Object.keys(this.lastKnownPlayerInputs).length === Object.keys(inputs).length;
     const predictionsCorrect = playerCountEqual && Object
       .entries(inputs)
-      .some(([peerId, input]) => {
+      .every(([peerId, input]) => {
         const lastInput = this.lastKnownPlayerInputs[peerId];
         return lastInput
           && lastInput.movement.x === input.movement.x
@@ -160,9 +173,16 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
           && lastInput.kick === input.kick;
       });
 
+    // console.log(
+    //   inputs[Object.keys(this.lastKnownPlayerInputs).find(k => k !== this.localPlayerId)!].movement,
+    //   this.lastKnownPlayerInputs[Object.keys(this.lastKnownPlayerInputs).find(k => k !== this.localPlayerId)!].movement,
+    //   predictionsCorrect,
+    // );
     if (predictionsCorrect) {
+      // console.log('correct');
       return;
     }
+    console.log('replaying...', inputs);
 
     // remove dropped player(s)
     if (!playerCountEqual) {
@@ -176,7 +196,6 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
 
     this.lastKnownPlayerInputs = inputs;
     this.replayFromIndex(inputs[this.localPlayerId].i);
-    this.lastAuthoritativeUpdateIndex++;
   }
 
   private replayFromIndex(index: number) {
@@ -184,8 +203,10 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
       .stateInputHistory
       .slice(this.stateInputHistory.findIndex(h => h.localInput.i === index));
 
+    this.isReplaying = true;
     this.world = RAPIER.World.restoreSnapshot(this.stateInputHistory[0].snapshot);
     this.stateInputHistory.forEach(({ localInput }) => this.updateWorld(localInput));
+    this.isReplaying = false;
   }
 
   private updateWorld(localInput: TransmittedInput): RenderableGameState {
@@ -210,7 +231,7 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
   }
 
   private applyInputs(input: TransmittedInput, player: RAPIER.RigidBody, ball: RAPIER.RigidBody) {
-    player.applyImpulse(scale(input.movement, 0.05), true);
+    player.applyImpulse(scale(input.movement, 0.5), true);
 
     if (input.kick) {
       const distanceVector = subtract(ball.translation(), player.translation());
