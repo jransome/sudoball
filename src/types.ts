@@ -5,28 +5,31 @@ type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends o
   payload: P;
 }
 
-// messages from host
-export type RTCHostMessageType =
-  | 'START'
-  | 'UPDATE'
-  | 'PLAYER_LINEUP_CHANGE'
+type RTCBidirectionalMessageType =
+  | 'INPUT'
 
-export type RTCGameStarted = RTCMessage<'START', InitPlayer[]>
-export type RTCAuthoritativeUpdate = RTCMessage<'UPDATE', PlayerInputsSnapshot>
-export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', [PeerId, InitPlayer][]>
+export type RTCHostMessageType =
+  | RTCBidirectionalMessageType
+  | 'START'
+  | 'PLAYER_LINEUP_CHANGE'
 
 export type RTCHostMessage =
   | RTCGameStarted
-  | RTCAuthoritativeUpdate
+  | RTCOtherPlayerInput
   | RTCPlayerLineupChanged
 
-// messages from client
 export type RTCClientMessageType =
-  | 'CLIENT_INPUT'
+  | RTCBidirectionalMessageType
 
-export type RTCClientInput = RTCMessage<'CLIENT_INPUT', TransmittedInput>
 export type RTCClientMessage =
-  | RTCClientInput
+  | RTCOtherPlayerInput
+
+export type RTCOtherPlayerInput = RTCMessage<'INPUT', TransmittedInputSnapshot>
+export type RTCGameStarted = RTCMessage<'START', InitPlayer[]>
+export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', [PeerId, InitPlayer][]>
+
+// export type RTCClientInput = RTCMessage<'INPUT', InputSnapshot>
+
 
 export type PeerId = string; // unique identifier for each rtc (player) connection
 
@@ -68,8 +71,12 @@ export type Input = {
   kick: boolean;
 }
 
-export type TransmittedInput = Input & {
+export type InputSnapshot = Input & {
   i: number;
 }
 
-export type PlayerInputsSnapshot = Record<PeerId, TransmittedInput>;
+export type TransmittedInputSnapshot = InputSnapshot & {
+  id: PeerId;
+}
+
+export type PlayerInputsSnapshot = Record<PeerId, InputSnapshot>

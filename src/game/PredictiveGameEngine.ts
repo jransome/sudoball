@@ -1,8 +1,8 @@
 import RAPIER from '@dimforge/rapier2d';
 import { EventEmitter } from '../Events';
 import { Team, GAME_BOUNDARY_DIMENSIONS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, KICK_RADIUS, GAME_FRAMERATE_HZ } from '../config';
-import { RenderableGameState, PeerId, Input, Vector2, TransmittedInput, PlayerInputsSnapshot, InitPlayer } from '../types';
-import { createBallBody, createPlayerBody, createGameBoundary } from './helpers';
+import { RenderableGameState, PeerId, Input, Vector2, InputSnapshot, PlayerInputsSnapshot, InitPlayer } from '../types';
+import { createBallBody, createPlayerBody, createGameBoundary, round } from './helpers';
 import { pitchBodies } from './pitch';
 import { getLocalInput } from '../input';
 
@@ -15,7 +15,7 @@ const normalise = (vector: Vector2) => {
 };
 
 type GameEngineEvents = {
-  update: (transmissibleInput: TransmittedInput, gameState: RenderableGameState) => void;
+  update: (transmissibleInput: InputSnapshot, gameState: RenderableGameState) => void;
   gameEvent: (eventName: string) => void;
 }
 
@@ -27,13 +27,16 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
   private isRunning = false;
   private isReplaying = false;
   private world: RAPIER.World;
-  private stateInputHistory: Array<{ localInput: TransmittedInput; snapshot: Uint8Array; }> = [];
+  private stateInputHistory: Array<{ tickIndex: number; localInput: InputSnapshot; snapshot: Uint8Array; }> = [];
 
   private ballHandle: number;
 
   private lastAuthoritativeUpdateIndex = -1;
   private peerIdWorldHandleMap = new Map<PeerId, number>();
-  private lastKnownPlayerInputs: PlayerInputsSnapshot = {}; // TODO make this an array?
+  private lastKnownOtherPlayerInputs: PlayerInputsSnapshot = { // TODO make this an array?
+    i: 0,
+    inputs: {},
+  };
 
   constructor(localPlayerId: PeerId) {
     super();
@@ -73,14 +76,17 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
   }
 
   public start(players: InitPlayer[]) {
-    players.forEach(({ peerId, team }) => {
+
+    players.forEach(({ peerId, team }, i) => {
       const playerRb = this.world.createRigidBody(
         RAPIER.RigidBodyDesc.dynamic()
-          .setTranslation(0, 100)
+          .setTranslation(100 * (i + 1), 100 * (i + 1))
           .setLinearDamping(0.5),
       );
       this.peerIdWorldHandleMap.set(peerId, playerRb.handle);
-      this.lastKnownPlayerInputs[peerId] = { i: -1, kick: false, movement: { x: 0, y: 0 } };
+      if (peerId !== this.localPlayerId) {
+        this.lastKnownOtherPlayerInputs.inputs[peerId] = { i: -1, kick: false, movement: { x: 0, y: 0 } };
+      }
 
       this.world.createCollider(
         RAPIER.ColliderDesc.ball(0.2),
@@ -108,20 +114,25 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
       if (!this.isRunning) return;
 
       if (!this.isReplaying) {
-        const localInput = { i: tickIndex, ...getLocalInput() };
+        const localInput: InputSnapshot = { i: tickIndex, ...getLocalInput() };
 
         this.stateInputHistory.push({
+          tickIndex,
           localInput,
           snapshot: this.world.takeSnapshot(),
         });
 
         this.emit('update', localInput, this.updateWorld(localInput));
       }
+
+      // console.table(
+      //   [...this.peerIdWorldHandleMap.entries()].sort().map(([id, h]) => ({ id, ...round(this.world.getRigidBody(h).translation()) }))
+      // );
       setTimeout(() => gameTick(tickIndex + 1), MS_PER_FRAME);
     };
 
     this.isRunning = true;
-    gameTick(1);
+    gameTick(0);
 
     // const onAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
     //   // if (!this.isRunning) return;
@@ -145,77 +156,86 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
     this.world.free();
   }
 
-  public reconcileAuthoritativeUpdate(inputs: PlayerInputsSnapshot) {
-    // return;
-
+  public reconcileAuthoritativeUpdate(inputsSnapshot: PlayerInputsSnapshot) {
     // if (inputs[this.localPlayerId].i !== this.lastAuthoritativeUpdateIndex + 1) {
-      console.log('order',{
-        expected: this.lastAuthoritativeUpdateIndex + 1,
-        received: inputs[this.localPlayerId].i,
-        diff: this.lastAuthoritativeUpdateIndex + 1 - inputs[this.localPlayerId].i,
-      });
-      // console.warn(`Received stale update from host, ${(this.lastAuthoritativeUpdateIndex + 1) - inputs[this.localPlayerId].i} frame(s) behind expected.`);
-      // return;
+    // console.log('order', {
+    //   expected: this.lastAuthoritativeUpdateIndex + 1,
+    //   received: inputsSnapshot.i,
+    //   diff: this.lastAuthoritativeUpdateIndex + 1 - inputsSnapshot.i,
+    // });
+    // console.warn(`Received stale update from host, ${(this.lastAuthoritativeUpdateIndex + 1) - inputs[this.localPlayerId].i} frame(s) behind expected.`);
+    // return;
     // }
     this.lastAuthoritativeUpdateIndex++;
 
     // should we also check the ball position?
 
     // check if there are divergences, if yes replay
-    const playerCountEqual = Object.keys(this.lastKnownPlayerInputs).length === Object.keys(inputs).length;
-    const predictionsCorrect = playerCountEqual && Object
-      .entries(inputs)
+    const noPlayersDropped = Object.keys(this.lastKnownOtherPlayerInputs).length === Object.keys(inputsSnapshot).length;
+    const predictionsCorrect = Object.entries(inputsSnapshot.inputs)
       .every(([peerId, input]) => {
-        const lastInput = this.lastKnownPlayerInputs[peerId];
+        const lastInput = this.lastKnownOtherPlayerInputs.inputs[peerId];
         return lastInput
           && lastInput.movement.x === input.movement.x
           && lastInput.movement.y === input.movement.y
           && lastInput.kick === input.kick;
       });
 
-    // console.log(
-    //   inputs[Object.keys(this.lastKnownPlayerInputs).find(k => k !== this.localPlayerId)!].movement,
-    //   this.lastKnownPlayerInputs[Object.keys(this.lastKnownPlayerInputs).find(k => k !== this.localPlayerId)!].movement,
-    //   predictionsCorrect,
-    // );
-    if (predictionsCorrect) {
+    // console.table({
+    //   hostUpdate: inputsSnapshot.inputs[Object.keys(this.lastKnownOtherPlayerInputs.inputs).find(k => k !== this.localPlayerId)!].movement,
+    //   lastKnown: this.lastKnownOtherPlayerInputs.inputs[Object.keys(this.lastKnownOtherPlayerInputs.inputs).find(k => k !== this.localPlayerId)!].movement,
+    //   predictionsCorrect: noPlayersDropped && predictionsCorrect,
+    // });
+    if (noPlayersDropped && predictionsCorrect) {
       // console.log('correct');
       return;
     }
-    console.log('replaying...', inputs);
+    // console.log('replaying...');
 
     // remove dropped player(s)
-    if (!playerCountEqual) {
+    if (!noPlayersDropped) {
       Object
-        .keys(this.lastKnownPlayerInputs)
-        .filter(id => !Object.keys(inputs).includes(id))
+        .keys(this.lastKnownOtherPlayerInputs.inputs)
+        .filter(id => !Object.keys(inputsSnapshot.inputs).includes(id))
         .forEach(missingId => this.world.removeRigidBody(
           this.world.getRigidBody(this.peerIdWorldHandleMap.get(missingId)!),
         ));
     }
 
-    this.lastKnownPlayerInputs = inputs;
-    this.replayFromIndex(inputs[this.localPlayerId].i);
+    this.lastKnownOtherPlayerInputs = inputsSnapshot;
+    this.replayFromIndex(inputsSnapshot.i);
   }
 
   private replayFromIndex(index: number) {
-    this.stateInputHistory = this
-      .stateInputHistory
-      .slice(this.stateInputHistory.findIndex(h => h.localInput.i === index));
+    const replayableHistory = this.stateInputHistory
+      .slice(this.stateInputHistory.findIndex(h => h.tickIndex === index));
+    // console.log('replaying input', replayableHistory);
+
+    if (!replayableHistory.length) {
+      console.error('tried to replay nothing');
+      return;
+    }
 
     this.isReplaying = true;
-    this.world = RAPIER.World.restoreSnapshot(this.stateInputHistory[0].snapshot);
-    this.stateInputHistory.forEach(({ localInput }) => this.updateWorld(localInput));
+    this.world = RAPIER.World.restoreSnapshot(replayableHistory[0].snapshot);
+    replayableHistory.forEach(({ tickIndex, localInput }) => {
+      this.stateInputHistory[tickIndex].snapshot = this.world.takeSnapshot();
+      this.updateWorld(localInput);
+    });
     this.isReplaying = false;
+    // console.log('replayed');
+    // console.table(
+    //   [...this.peerIdWorldHandleMap.entries()].sort().map(([id, h]) => ({ id, ...round(this.world.getRigidBody(h).translation()) }))
+    // );
   }
 
-  private updateWorld(localInput: TransmittedInput): RenderableGameState {
+  private updateWorld(localInput: InputSnapshot): RenderableGameState {
     // apply local player input and last known inputs of all other players
-    this.lastKnownPlayerInputs[this.localPlayerId] = localInput;
+    this.lastKnownOtherPlayerInputs.inputs[this.localPlayerId] = localInput;
     const ball = this.world.getRigidBody(this.ballHandle);
 
     const getPlayerInfos = Object
-      .entries(this.lastKnownPlayerInputs)
+      .entries(this.lastKnownOtherPlayerInputs.inputs)
       .map(([peerId, input]) => {
         const rb = this.world.getRigidBody(this.peerIdWorldHandleMap.get(peerId)!);
         this.applyInputs(input, rb, ball);
@@ -230,7 +250,7 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
     };
   }
 
-  private applyInputs(input: TransmittedInput, player: RAPIER.RigidBody, ball: RAPIER.RigidBody) {
+  private applyInputs(input: InputSnapshot, player: RAPIER.RigidBody, ball: RAPIER.RigidBody) {
     player.applyImpulse(scale(input.movement, 0.5), true);
 
     if (input.kick) {

@@ -5,7 +5,7 @@ import { RTCHost } from './RTCHost';
 import { RTCClient } from './RTCClient';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
 // import { GameEngine } from './game';
-import { PeerId, PlayerInputsSnapshot, RTCAuthoritativeUpdate, RTCClientMessage, RTCGameStarted, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
+import { PeerId, PlayerInputsSnapshot, RTCOtherPlayerInput, RTCClientMessage, RTCGameStarted, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
 import { CanvasPainter } from './CanvasPainter';
 import { ParticipantManager } from './participants';
 import { generateReadableId } from './id';
@@ -36,32 +36,26 @@ const App = () => {
   const [participants, setParticipants] = useState<Record<PeerId, { name: string; team: Team; }>>({});
 
   const [rtcHost, setRtcHost] = useState<RTCHost>();
+  const [tickI, setTickI] = useState(0);
 
 
   const startGame = () => {
-    // let isLagging = false;
-    // setInterval(() => {
-    //   console.log('oopsie');
-    //   isLagging = true;
-    //   setTimeout(() => {
-    //     isLagging = false;
-    //   }, 500);
-    // }, 5000);
+
     const initPlayer = Object.entries(participants).map(([peerId, { name, team }]) => ({ peerId, name, team }));
     // playerInputsSnapshot = Object.keys(participants).map(pId => [pId, get])
     rtcHost!.broadcast({ type: 'START', payload: initPlayer });
 
     hostGameInstance = new AuthoritativeGameEngine(hostId);
 
-    const otherId = Object.keys(participants).find(k => k !== hostId)!;
-    hostGameInstance.on('update', (lastKnownPlayerInputs, renderableGameState) => {
+    // const otherId = Object.keys(participants).find(k => k !== hostId)!;
+    hostGameInstance.on('update', (localInputSnapshot, renderableState) => {
       // if (!isLagging) 
-      console.dir('sending back', lastKnownPlayerInputs[otherId].i);
-      rtcHost!.broadcast({ type: 'UPDATE', payload: lastKnownPlayerInputs });
-      CanvasPainter.paintGameState(renderableGameState);
+      // console.log('sending', localInputSnapshot.i);
+      rtcHost!.broadcast({ type: 'INPUT', payload: { id: hostId, ...localInputSnapshot } });
+      CanvasPainter.paintGameState(renderableState);
     });
 
-    hostGameInstance.start(initPlayer);
+    hostGameInstance.start(initPlayer, setTickI);
 
     // GameEngine.on('gameEvent', (gameEvent) => {
     //   /**
@@ -118,13 +112,12 @@ const App = () => {
 
     rtc.on('clientMessage', (clientId: PeerId, message: RTCClientMessage) => {
       // ParticipantManager.HostInterface.playerInputs.set(clientId, message.payload);
-      if (message.type === 'CLIENT_INPUT') {
-        console.log('received', clientId, message.payload.i);
-        hostGameInstance && hostGameInstance.updateClientInput(clientId, message.payload);
+      if (message.type === 'INPUT') {
+        // console.log('received', clientId, message.payload.i);
+        rtc.broadcast(message, [clientId]);
+        hostGameInstance && hostGameInstance.reconcileInputUpdate(message.payload);
       }
 
-      // console.log(message)
-      // rtc.broadcast(message);
     });
 
     rtc.startHosting();
@@ -133,21 +126,21 @@ const App = () => {
   const joinGame = async (hostId: string) => {
     const peerId = generateReadableId();
     const rtc = new RTCClient(peerId);
-    const game = new PredictiveGameEngine(peerId);
+    const game = new AuthoritativeGameEngine(peerId);
     // ParticipantManager.reset(peerId);
     console.log('me:', peerId);
 
-    game.on('update', (localInput, renderableState) => {
-      rtc.sendToHost({ type: 'CLIENT_INPUT', payload: localInput });
+    game.on('update', (localInputSnapshot, renderableState) => {
+      rtc.sendToHost({ type: 'INPUT', payload: { id: peerId, ...localInputSnapshot } });
       CanvasPainter.paintGameState(renderableState);
     });
 
     const onGameStart = (message: RTCGameStarted) => {
-      game.start(message.payload);
+      game.start(message.payload, setTickI);
     };
 
-    const onAuthoritativeUpdate = (message: RTCAuthoritativeUpdate) => {
-      game.reconcileAuthoritativeUpdate(message.payload);
+    const onInputUpdate = (message: RTCOtherPlayerInput) => {
+      game.reconcileInputUpdate(message.payload);
     };
 
     const onLineupChange = (message: RTCPlayerLineupChanged) => {
@@ -158,26 +151,25 @@ const App = () => {
     type HostMessageHandler = (message: RTCHostMessage) => void;
     const hostMessageHandlers: Record<RTCHostMessageType, HostMessageHandler> = {
       START: onGameStart as HostMessageHandler,
-      UPDATE: onAuthoritativeUpdate as HostMessageHandler,
+      INPUT: onInputUpdate as HostMessageHandler,
       PLAYER_LINEUP_CHANGE: onLineupChange as HostMessageHandler,
     };
 
-    // let receivedCount = 0;
     // setTimeout(() => {
     //   const send = (i: number) => {
     //     rtc.sendToHost({ clientCounter: i });
-    //     setTimeout(() => send(i + 1), 10);
+    //     setTimeout(() => send(i + 1), 100);
     //   };
     //   send(0);
     // }, 2000);
 
+    // const received = [];
+    // setInterval(() => {
+    //   console.log('in buffer:', received.length)
+    //   received.length = 0;
+    // }, 100);
     rtc.on('hostMessage', (message: RTCHostMessage) => {
-      // console.log({
-      //   got: message.clientCounter,
-      //   receivedCount,
-      //   diff: receivedCount - message.clientCounter
-      // });
-      // receivedCount++;
+
       const handler = hostMessageHandlers[message.type];
       if (!handler) {
         console.error('received unprocessable message from host!', message);
@@ -238,6 +230,7 @@ const App = () => {
       </div>
       <ResponsiveCanvas gameDimensions={GAME_BOUNDARY_DIMENSIONS} />
 
+      <h4>Tick: {tickI}</h4>
       <h4>Players:</h4>
       <ul>
         {Object.entries(participants).map(([peerId, { name }], i) => <li key={i}>{name} | {peerId} {peerId === hostId && '(you)'}</li>)}
