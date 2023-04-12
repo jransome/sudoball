@@ -15,6 +15,7 @@ const normalise = (vector: Vector2) => {
 };
 
 type GameEngineEvents = {
+  state: (stateSnapshop: any) => void;
   update: (localInputSnapshot: InputSnapshot, gameState: RenderableGameState) => void;
   gameEvent: (eventName: string) => void;
 }
@@ -139,6 +140,12 @@ export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
         snapshot: this.world.takeSnapshot(),
       });
 
+      this.emit('state', [...this.peerIdWorldHandleMap.entries()]
+        .reduce((acc, [id, handle]) => ({
+          ...acc,
+          [id]: this.world.getRigidBody(handle).translation(),
+        }), { tickIndex }));
+
       this.emit('update', localInput, this.updateWorld(localInput));
       // console.table(
       //   [...this.peerIdWorldHandleMap.entries()].sort().map(([id, h]) => ({ id, ...round(this.world.getRigidBody(h).translation()) }))
@@ -249,7 +256,7 @@ export class AuthoritativeGameEngine extends EventEmitter<GameEngineEvents> {
       replayIndex: otherInput.i,
       historyLength: this.stateInputHistory.length,
       replayableLength: replayableHistory.length,
-    })
+    });
     this.replay(replayableHistory);
   }
 

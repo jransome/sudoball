@@ -26,6 +26,9 @@ const useStyles = createUseStyles({
 });
 
 let hostGameInstance: AuthoritativeGameEngine = null!;
+const clientStates = {};
+
+setInterval(() => console.log(clientStates), 3000);
 
 const App = () => {
   const classes = useStyles();
@@ -38,7 +41,6 @@ const App = () => {
   const [rtcHost, setRtcHost] = useState<RTCHost>();
   const [tickI, setTickI] = useState(0);
 
-
   const startGame = () => {
 
     const initPlayer = Object.entries(participants).map(([peerId, { name, team }]) => ({ peerId, name, team }));
@@ -46,6 +48,17 @@ const App = () => {
     rtcHost!.broadcast({ type: 'START', payload: initPlayer });
 
     hostGameInstance = new AuthoritativeGameEngine(hostId);
+
+    hostGameInstance.on('state', (state) => {
+      if (!clientStates[state.tickIndex]) {
+        clientStates[state.tickIndex] = [
+          { owner: hostId, ...state },
+        ];
+      } else {
+        clientStates[state.tickIndex].push({ owner: hostId, ...state });
+      }
+
+    });
 
     // const otherId = Object.keys(participants).find(k => k !== hostId)!;
     hostGameInstance.on('update', (localInputSnapshot, renderableState) => {
@@ -118,6 +131,15 @@ const App = () => {
         hostGameInstance && hostGameInstance.reconcileInputUpdate(message.payload);
       }
 
+      if (message.type === 'STATE') {
+        if (!clientStates[message.payload.tickIndex]) {
+          clientStates[message.payload.tickIndex] = [
+            { owner: clientId, ...message.payload },
+          ];
+        } else {
+          clientStates[message.payload.tickIndex].push({ owner: clientId, ...message.payload });
+        }
+      }
     });
 
     rtc.startHosting();
@@ -129,6 +151,10 @@ const App = () => {
     const game = new AuthoritativeGameEngine(peerId);
     // ParticipantManager.reset(peerId);
     console.log('me:', peerId);
+
+    game.on('state', (state) => {
+      rtc.sendToHost({ type: 'STATE', payload: state });
+    });
 
     game.on('update', (localInputSnapshot, renderableState) => {
       rtc.sendToHost({ type: 'INPUT', payload: { id: peerId, ...localInputSnapshot } });
