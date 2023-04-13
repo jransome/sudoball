@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { GAME_BOUNDARY_DIMENSIONS, Team } from './config';
+import { GAME_BOUNDARY_DIMENSIONS, GAME_FRAMERATE_HZ, Team } from './config';
 import { RTCHost } from './RTCHost';
 import { RTCClient } from './RTCClient';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
 // import { GameEngine } from './game';
-import { PeerId, PlayerInputsSnapshot, RTCOtherPlayerInput, RTCClientMessage, RTCGameStarted, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
+import { PeerId, PlayerInputsSnapshot, RTCOtherPlayerInput, RTCClientMessage, RTCGameStarted, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged, RenderableGameState } from './types';
 import { CanvasPainter } from './CanvasPainter';
 import { ParticipantManager } from './participants';
 import { generateReadableId } from './id';
 import { PredictiveGameEngine } from './game';
-import { AuthoritativeGameEngine } from './game/AuthoritativeGameEngine';
+import { getLocalInput } from './input';
+import { EngineTest } from './game/EngineTest';
 
 const useStyles = createUseStyles({
   controls: {
@@ -25,10 +26,9 @@ const useStyles = createUseStyles({
   },
 });
 
-let hostGameInstance: AuthoritativeGameEngine = null!;
-const clientStates = {};
+let hostGameInstance: PredictiveGameEngine = null!;
 
-setInterval(() => console.log(clientStates), 3000);
+// setInterval(() => console.log(clientStates), 3000);
 
 const App = () => {
   const classes = useStyles();
@@ -47,17 +47,10 @@ const App = () => {
     // playerInputsSnapshot = Object.keys(participants).map(pId => [pId, get])
     rtcHost!.broadcast({ type: 'START', payload: initPlayer });
 
-    hostGameInstance = new AuthoritativeGameEngine(hostId);
-
-    hostGameInstance.on('state', (state) => {
-      if (!clientStates[state.tickIndex]) {
-        clientStates[state.tickIndex] = [
-          { owner: hostId, ...state },
-        ];
-      } else {
-        clientStates[state.tickIndex].push({ owner: hostId, ...state });
-      }
-
+    hostGameInstance = new PredictiveGameEngine({
+      localPlayerId: hostId,
+      msPerFrame: 1000 / GAME_FRAMERATE_HZ,
+      pollLocalInput: getLocalInput,
     });
 
     // const otherId = Object.keys(participants).find(k => k !== hostId)!;
@@ -66,9 +59,10 @@ const App = () => {
       // console.log('sending', localInputSnapshot.i);
       rtcHost!.broadcast({ type: 'INPUT', payload: { id: hostId, ...localInputSnapshot } });
       CanvasPainter.paintGameState(renderableState);
+      setTickI(localInputSnapshot.i);
     });
 
-    hostGameInstance.start(initPlayer, setTickI);
+    hostGameInstance.start(initPlayer);
 
     // GameEngine.on('gameEvent', (gameEvent) => {
     //   /**
@@ -132,13 +126,7 @@ const App = () => {
       }
 
       if (message.type === 'STATE') {
-        if (!clientStates[message.payload.tickIndex]) {
-          clientStates[message.payload.tickIndex] = [
-            { owner: clientId, ...message.payload },
-          ];
-        } else {
-          clientStates[message.payload.tickIndex].push({ owner: clientId, ...message.payload });
-        }
+        CanvasPainter.setGhost(message.payload as unknown as RenderableGameState);
       }
     });
 
@@ -148,21 +136,23 @@ const App = () => {
   const joinGame = async (hostId: string) => {
     const peerId = generateReadableId();
     const rtc = new RTCClient(peerId);
-    const game = new AuthoritativeGameEngine(peerId);
+    const game = new PredictiveGameEngine({
+      localPlayerId: peerId,
+      msPerFrame: 1000 / GAME_FRAMERATE_HZ,
+      pollLocalInput: getLocalInput,
+    });
     // ParticipantManager.reset(peerId);
     console.log('me:', peerId);
 
-    game.on('state', (state) => {
-      rtc.sendToHost({ type: 'STATE', payload: state });
-    });
-
     game.on('update', (localInputSnapshot, renderableState) => {
+      rtc.sendToHost({ type: 'STATE', payload: { id: peerId, ...renderableState } });
       rtc.sendToHost({ type: 'INPUT', payload: { id: peerId, ...localInputSnapshot } });
       CanvasPainter.paintGameState(renderableState);
+      setTickI(localInputSnapshot.i);
     });
 
     const onGameStart = (message: RTCGameStarted) => {
-      game.start(message.payload, setTickI);
+      game.start(message.payload);
     };
 
     const onInputUpdate = (message: RTCOtherPlayerInput) => {
@@ -211,6 +201,7 @@ const App = () => {
 
   return (
     <>
+      <EngineTest />
       <div className={classes.controls}>
         <h4>Sudoball</h4>
         <h3 className={isConnected ? classes.connected : classes.disconnected}>

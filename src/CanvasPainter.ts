@@ -4,6 +4,8 @@ import { scale } from './game/helpers';
 import { ParticipantManager } from './participants';
 import { RenderableGameState, Circle, Polygon, Vector2 } from './types';
 
+let ghosts = {};
+
 type ShapePainter<T extends Circle | Polygon> = (
   ctx: CanvasRenderingContext2D,
   fillColour: string,
@@ -42,7 +44,7 @@ const paintCircle: ShapePainter<Circle> = (ctx, fillColour, strokeColour, { posi
 
 const paintPlayer = (ctx: CanvasRenderingContext2D, position: Vector2, playerName: string, teamColour: string, strokeColor: string, isSelf: boolean) => {
   if (isSelf) paintCircle(ctx, 'rgba(0, 0, 0, 0)', 'rgba(255, 255, 255, 0.3)', { position, radius: KICK_RADIUS });
-  paintCircle(ctx, teamColour, strokeColor, { position, radius: PLAYER_RADIUS });
+  paintCircle(ctx, teamColour, strokeColor, { position, radius: PLAYER_RADIUS * 4 });
   ctx.textAlign = 'center';
   ctx.fillText(playerName, position.x, position.y + 30);
 };
@@ -69,6 +71,24 @@ const paint = (gameState: RenderableGameState) => {
     );
   });
   paintCircle(ctx, 'white', 'white', { position: gameState.ball, radius: BALL_RADIUS });
+
+  const ghostsArr: RenderableGameState[] = Object.values(ghosts);
+  const ghostColours = ['cyan', 'magenta', 'yellow'];
+  if (ghostsArr.length) {
+    ghostsArr.forEach((g, i) => {
+      g.players.forEach((p) => {
+        paintPlayer(
+          ctx,
+          scale(p.position, 4),
+          p.id,
+          'rgba(0, 0, 0, 0)',
+          ghostColours[i],
+          false,
+        );
+      });
+      // paintCircle(ctx, 'rgba(0, 0, 0, 0)', 'white', { position: ghost.ball, radius: BALL_RADIUS });
+    });
+  }
 };
 
 const paintGameState = (gameState: RenderableGameState) => {
@@ -83,4 +103,5 @@ const paintGameState = (gameState: RenderableGameState) => {
 export const CanvasPainter = {
   setContext,
   paintGameState,
+  setGhost: (other) => { ghosts[other.id] = other; },
 };

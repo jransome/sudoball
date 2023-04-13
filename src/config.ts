@@ -6,10 +6,10 @@ export const PITCH_MARGIN = { x: 40, y: 30 }; // gap between pitch boundaries (w
 export const GOAL_WIDTH = 100; // must be less than game dimensions y - (2 * pitch buffer.y)
 export const POST_RADIUS = 6;
 
-export const PLAYER_RADIUS = 10;
+export const PLAYER_RADIUS = 3;
 export const PLAYER_MASS = 1000;
 export const PLAYER_DRAG = 0.07;
-export const MOVE_FORCE = 0.4;
+export const MOVE_FORCE = 15;
 
 export const KICK_FORCE = 0.15;
 export const KICK_RADIUS = 16;

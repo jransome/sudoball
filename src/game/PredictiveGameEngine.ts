@@ -1,10 +1,7 @@
 import RAPIER from '@dimforge/rapier2d';
 import { EventEmitter } from '../Events';
-import { Team, GAME_BOUNDARY_DIMENSIONS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, KICK_RADIUS, GAME_FRAMERATE_HZ } from '../config';
-import { RenderableGameState, PeerId, Input, Vector2, InputSnapshot, PlayerInputsSnapshot, InitPlayer } from '../types';
-import { createBallBody, createPlayerBody, createGameBoundary, round } from './helpers';
-import { pitchBodies } from './pitch';
-import { getLocalInput } from '../input';
+import { Team, KICK_FORCE, BALL_RADIUS, KICK_RADIUS, PLAYER_RADIUS, MOVE_FORCE } from '../config';
+import { RenderableGameState, PeerId, Input, Vector2, InputSnapshot, PlayerInputsSnapshot, InitPlayer, TransmittedInputSnapshot } from '../types';
 
 const scale = (vector: Vector2, scalar: number) => ({ x: vector.x * scalar, y: vector.y * scalar });
 const subtract = (v1: Vector2, v2: Vector2) => ({ x: v1.x - v2.y, y: v1.y - v2.y });
@@ -14,33 +11,49 @@ const normalise = (vector: Vector2) => {
   return { x: vector.x / magnitude, y: vector.y / magnitude };
 };
 
-type GameEngineEvents = {
-  update: (transmissibleInput: InputSnapshot, gameState: RenderableGameState) => void;
-  gameEvent: (eventName: string) => void;
+type PredictiveGameEngineOptions = {
+  localPlayerId: PeerId;
+  msPerFrame: number;
+  pollLocalInput: () => Input;
 }
 
-const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
-const MS_PER_FRAME = 1000 / GAME_FRAMERATE_HZ;
+type GameEngineEvents = {
+  update: (transmissibleInput: InputSnapshot, gameState: RenderableGameState) => void;
+  // gameEvent: (eventName: string) => void;
+}
 
-export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
+type StateInputHistory = Array<{ tickIndex: number; localInput: InputSnapshot; snapshot: Uint8Array; }>;
+
+const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
+
+export class PredictiveGameEngine extends EventEmitter<GameEngineEvents>  {
   private localPlayerId: PeerId;
+  private msPerFrame: number;
   private isRunning = false;
   private isReplaying = false;
+  private pollLocalInput: () => Input;
   private world: RAPIER.World;
-  private stateInputHistory: Array<{ tickIndex: number; localInput: InputSnapshot; snapshot: Uint8Array; }> = [];
+  private stateInputHistory: StateInputHistory = []; // TODO: max length on this
 
   private ballHandle: number;
 
-  private lastAuthoritativeUpdateIndex = -1;
   private peerIdWorldHandleMap = new Map<PeerId, number>();
-  private lastKnownOtherPlayerInputs: PlayerInputsSnapshot = { // TODO make this an array?
-    i: 0,
-    inputs: {},
+  private lastKnownClientInputs: PlayerInputsSnapshot = {};
+
+  private throttleOnNextTick = false;
+  private scheduledInputs: Record<number, Record<PeerId, TransmittedInputSnapshot>> = {};
+
+  public stats = {
+    ticks: 0,
+    throttles: 0,
+    replays: 0,
   };
 
-  constructor(localPlayerId: PeerId) {
+  constructor({ localPlayerId, msPerFrame, pollLocalInput }: PredictiveGameEngineOptions) {
     super();
     this.localPlayerId = localPlayerId;
+    this.msPerFrame = msPerFrame;
+    this.pollLocalInput = pollLocalInput;
     this.world = new RAPIER.World({ x: 0, y: 0 });
 
     // Construct world
@@ -76,25 +89,24 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
   }
 
   public start(players: InitPlayer[]) {
+    const startingTickIndex = 0;
 
     players.forEach(({ peerId, team }, i) => {
       const playerRb = this.world.createRigidBody(
         RAPIER.RigidBodyDesc.dynamic()
-          .setTranslation(100 * (i + 1), 100 * (i + 1))
+          .setTranslation(10 * (i + 1), 10 * (i + 1))
           .setLinearDamping(0.5),
       );
       this.peerIdWorldHandleMap.set(peerId, playerRb.handle);
       if (peerId !== this.localPlayerId) {
-        this.lastKnownOtherPlayerInputs.inputs[peerId] = { i: -1, kick: false, movement: { x: 0, y: 0 } };
+        this.lastKnownClientInputs[peerId] = { i: startingTickIndex, kick: false, movement: { x: 0, y: 0 } };
       }
 
       this.world.createCollider(
-        RAPIER.ColliderDesc.ball(0.2),
+        RAPIER.ColliderDesc.ball(PLAYER_RADIUS),
         playerRb,
       );
     });
-
-
 
 
     // setTimeout(() => {
@@ -108,38 +120,56 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
     //     rollback(i);
     //   }, 200);
     // }, 3000);
-
-
     const gameTick = (tickIndex: number) => {
+      this.stats.ticks = tickIndex;
+
       if (!this.isRunning) return;
 
-      if (!this.isReplaying) {
-        const localInput: InputSnapshot = { i: tickIndex, ...getLocalInput() };
-
-        this.stateInputHistory.push({
-          tickIndex,
-          localInput,
-          snapshot: this.world.takeSnapshot(),
-        });
-
-        this.emit('update', localInput, this.updateWorld(localInput));
+      if (this.isReplaying) {
+        setTimeout(() => gameTick(tickIndex), 0);
+        return;
       }
 
+      if (this.throttleOnNextTick) {
+        this.stats.throttles++;
+        // console.log('throttling');
+        this.throttleOnNextTick = false;
+        setTimeout(() => gameTick(tickIndex), this.msPerFrame);
+        return;
+      }
+
+      if (this.scheduledInputs[tickIndex]) {
+        // console.log('retreiving scheduled');
+        Object.entries(this.scheduledInputs[tickIndex]).forEach(([id, input]) => {
+          this.lastKnownClientInputs[id] = input;
+        });
+        delete this.scheduledInputs[tickIndex];
+      }
+
+      const localInput: InputSnapshot = { i: tickIndex, ...this.pollLocalInput() };
+      this.stateInputHistory.push({
+        tickIndex,
+        localInput,
+        snapshot: this.world.takeSnapshot(),
+      });
+
+      this.emit('update', localInput, this.updateWorld(localInput));
       // console.table(
       //   [...this.peerIdWorldHandleMap.entries()].sort().map(([id, h]) => ({ id, ...round(this.world.getRigidBody(h).translation()) }))
       // );
-      setTimeout(() => gameTick(tickIndex + 1), MS_PER_FRAME);
+
+      setTimeout(() => gameTick(tickIndex + 1), this.msPerFrame);
     };
 
     this.isRunning = true;
-    gameTick(0);
+    gameTick(startingTickIndex);
 
     // const onAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
     //   // if (!this.isRunning) return;
     //   const deltaTime = timestamp - lastFrameTimeMs;
-    //   if (deltaTime > MS_PER_FRAME) {
+    //   if (deltaTime > this.msPerFrame) {
     //     gameLoop();
-    //     lastFrameTimeMs = timestamp - (deltaTime % MS_PER_FRAME);
+    //     lastFrameTimeMs = timestamp - (deltaTime % this.msPerFrame);
     //   }
     //   window.requestAnimationFrame(onAnimationFrame);
     // };
@@ -150,74 +180,99 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
 
   }
 
-  public dispose() {
+  public shutdown() {
     this.removeAllListeners();
     this.isRunning = false;
     this.world.free();
   }
 
-  public reconcileAuthoritativeUpdate(inputsSnapshot: PlayerInputsSnapshot) {
-    // if (inputs[this.localPlayerId].i !== this.lastAuthoritativeUpdateIndex + 1) {
-    // console.log('order', {
-    //   expected: this.lastAuthoritativeUpdateIndex + 1,
-    //   received: inputsSnapshot.i,
-    //   diff: this.lastAuthoritativeUpdateIndex + 1 - inputsSnapshot.i,
-    // });
-    // console.warn(`Received stale update from host, ${(this.lastAuthoritativeUpdateIndex + 1) - inputs[this.localPlayerId].i} frame(s) behind expected.`);
-    // return;
+  public reconcileInputUpdate(otherInput: TransmittedInputSnapshot) {
+    const lastLocalTickIndex = Number(this.stateInputHistory.at(-1)?.tickIndex);
+    const MAX_TICKS_AHEAD = 1;
+    // console.log('other is behind by', currentLocalTickIndex - otherInput.i);
+
+    /**
+     * input arrived for ticks way in the past 
+     * local is ahead by more than MAX_TICKS_AHEAD 
+     * MAX_TICKS_AHEAD is large enough that we assume this desync is due to the game instances 
+     * drifting in reality as some delay is obviously expected due to latency
+     * So we need to slow ourselves down to let others catch up
+     */
+    if (lastLocalTickIndex > otherInput.i + MAX_TICKS_AHEAD) {
+      this.throttleOnNextTick = true;
+    }
+
+    /**
+     * input arrived JIT
+     * so apply immediately
+     */
+    // if ((currentLocalTickIndex + 1) === otherInput.i) {
+    //   console.log('JIT');
+    //   this.lastKnownClientInputs[otherInput.id] = otherInput;
+    //   return;
     // }
-    this.lastAuthoritativeUpdateIndex++;
 
-    // should we also check the ball position?
+    /**
+     * input arrived for future ticks that haven't occurred yet
+     * schedule them in the future and the throttling on the other
+     * end should take care of the rest
+     */
+    if (lastLocalTickIndex < otherInput.i) {
+      // console.log('behind');
+      this.scheduledInputs[otherInput.i] = {
+        ...this.scheduledInputs[otherInput.i],
+        [otherInput.id]: otherInput,
+      };
+      // this.lastKnownClientInputs[otherInput.id] = otherInput;
+      return;
+    }
 
-    // check if there are divergences, if yes replay
-    const noPlayersDropped = Object.keys(this.lastKnownOtherPlayerInputs).length === Object.keys(inputsSnapshot).length;
-    const predictionsCorrect = Object.entries(inputsSnapshot.inputs)
-      .every(([peerId, input]) => {
-        const lastInput = this.lastKnownOtherPlayerInputs.inputs[peerId];
-        return lastInput
-          && lastInput.movement.x === input.movement.x
-          && lastInput.movement.y === input.movement.y
-          && lastInput.kick === input.kick;
-      });
+    const storedHistoryIndex = this.stateInputHistory.findIndex(h => h.tickIndex === otherInput.i);
+    /**
+     * TODO
+     * if other is ahead in ticks then we need to fast forward....
+     * using the buffer of inputs that should have been received in the mean time
+     * 
+     * if one tick ahead then do we just set that input (assuming it's different)
+     * 
+     * if > 1 tick ahead then drain the buffer of inputs and apply to 'roll forward' the engine
+     */
+    // if (storedHistoryIndex < 0) {
+    //   console.warn('other is in the future');
+    //   return;
+    // }
 
-    // console.table({
-    //   hostUpdate: inputsSnapshot.inputs[Object.keys(this.lastKnownOtherPlayerInputs.inputs).find(k => k !== this.localPlayerId)!].movement,
-    //   lastKnown: this.lastKnownOtherPlayerInputs.inputs[Object.keys(this.lastKnownOtherPlayerInputs.inputs).find(k => k !== this.localPlayerId)!].movement,
-    //   predictionsCorrect: noPlayersDropped && predictionsCorrect,
-    // });
-    if (noPlayersDropped && predictionsCorrect) {
+    const predictedInput = this.lastKnownClientInputs[otherInput.id];
+    const predictionsCorrect = predictedInput.kick === otherInput.kick
+      && predictedInput.movement.x === otherInput.movement.x
+      && predictedInput.movement.y === otherInput.movement.y;
+
+    if (predictionsCorrect) {
       // console.log('correct');
       return;
     }
-    // console.log('replaying...');
 
-    // remove dropped player(s)
-    if (!noPlayersDropped) {
-      Object
-        .keys(this.lastKnownOtherPlayerInputs.inputs)
-        .filter(id => !Object.keys(inputsSnapshot.inputs).includes(id))
-        .forEach(missingId => this.world.removeRigidBody(
-          this.world.getRigidBody(this.peerIdWorldHandleMap.get(missingId)!),
-        ));
-    }
-
-    this.lastKnownOtherPlayerInputs = inputsSnapshot;
-    this.replayFromIndex(inputsSnapshot.i);
+    this.lastKnownClientInputs[otherInput.id] = otherInput;
+    const replayableHistory = structuredClone(this.stateInputHistory.slice(storedHistoryIndex));
+    // console.log({
+    //   replayIndex: otherInput.i,
+    //   historyLength: this.stateInputHistory.length,
+    //   replayableLength: replayableHistory.length,
+    // });
+    this.replay(replayableHistory);
   }
 
-  private replayFromIndex(index: number) {
-    const replayableHistory = this.stateInputHistory
-      .slice(this.stateInputHistory.findIndex(h => h.tickIndex === index));
-    // console.log('replaying input', replayableHistory);
+  private replay(replayableHistory: StateInputHistory) {
 
-    if (!replayableHistory.length) {
-      console.error('tried to replay nothing');
-      return;
-    }
+    // if (replayableHistory.length < 1) {
+    //   console.error('tried to replay nothing');
+    //   return;
+    // }
 
     this.isReplaying = true;
+    this.stats.replays++;
     this.world = RAPIER.World.restoreSnapshot(replayableHistory[0].snapshot);
+
     replayableHistory.forEach(({ tickIndex, localInput }) => {
       this.stateInputHistory[tickIndex].snapshot = this.world.takeSnapshot();
       this.updateWorld(localInput);
@@ -229,16 +284,14 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
     // );
   }
 
+  // applies local player input and last known inputs of all other players
   private updateWorld(localInput: InputSnapshot): RenderableGameState {
-    // apply local player input and last known inputs of all other players
-    this.lastKnownOtherPlayerInputs.inputs[this.localPlayerId] = localInput;
     const ball = this.world.getRigidBody(this.ballHandle);
-
     const getPlayerInfos = Object
-      .entries(this.lastKnownOtherPlayerInputs.inputs)
+      .entries({ ...this.lastKnownClientInputs, [this.localPlayerId]: localInput })
       .map(([peerId, input]) => {
         const rb = this.world.getRigidBody(this.peerIdWorldHandleMap.get(peerId)!);
-        this.applyInputs(input, rb, ball);
+        this.applyPlayerInput(input, rb, ball);
         return () => ({ id: peerId, team: Team.Blue, position: rb.translation(), isKicking: input.kick });
       });
 
@@ -250,8 +303,8 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents> {
     };
   }
 
-  private applyInputs(input: InputSnapshot, player: RAPIER.RigidBody, ball: RAPIER.RigidBody) {
-    player.applyImpulse(scale(input.movement, 0.5), true);
+  private applyPlayerInput(input: InputSnapshot, player: RAPIER.RigidBody, ball: RAPIER.RigidBody) {
+    player.applyImpulse(scale(input.movement, MOVE_FORCE), true);
 
     if (input.kick) {
       const distanceVector = subtract(ball.translation(), player.translation());
