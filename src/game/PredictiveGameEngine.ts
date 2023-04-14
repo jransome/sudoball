@@ -25,6 +25,7 @@ type GameEngineEvents = {
 type StateInputHistory = Array<{ tickIndex: number; localInput: InputSnapshot; snapshot: Uint8Array; }>;
 
 const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
+const lastInputCounters = {};
 
 export class PredictiveGameEngine extends EventEmitter<GameEngineEvents>  {
   private localPlayerId: PeerId;
@@ -187,6 +188,17 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents>  {
   }
 
   public reconcileInputUpdate(otherInput: TransmittedInputSnapshot) {
+
+    lastInputCounters[otherInput.id] ??= 0;
+    if (lastInputCounters[otherInput.id] + 1 !== otherInput.i) {
+      console.error('tick not in order', {
+        id: otherInput.id,
+        difference: lastInputCounters[otherInput.id] - otherInput.i,
+      });
+    }
+    lastInputCounters[otherInput.id] = otherInput.i;
+
+
     const lastLocalTickIndex = Number(this.stateInputHistory.at(-1)?.tickIndex);
     const MAX_TICKS_AHEAD = 1;
     // console.log('other is behind by', currentLocalTickIndex - otherInput.i);
