@@ -12,6 +12,7 @@ import { generateReadableId } from './id';
 import { PredictiveGameEngine } from './game';
 import { getLocalInput } from './input';
 import { EngineTest } from './game/EngineTest';
+import { receive } from './reliability';
 
 const useStyles = createUseStyles({
   controls: {
@@ -92,11 +93,7 @@ const App = () => {
       [hostId]: { name: hostId, team: Team.Blue },
     }));
 
-    const receivedCounts = [];
-    let i = 0;
-    setInterval(() => {
-      if (isConnected) rtc.broadcast({ type: 'COUNT', payload: i++ });
-    }, 10);
+
 
     rtc.on('clientConnected', (id) => {
       console.log(id, 'joined');
@@ -107,6 +104,12 @@ const App = () => {
       }));
       setIsConnected(true);
 
+
+      let i = 0;
+      setInterval(() => {
+        if (i < 10) console.log('sending', i);
+        rtc.broadcast({ type: 'COUNT', payload: i++ });
+      }, 10);
       // ParticipantManager.HostInterface.add(
       //   id,
       //   rtc.clients.length % 2 === 0 ? Team.Red : Team.Blue,
@@ -127,7 +130,6 @@ const App = () => {
     rtc.on('clientMessage', (clientId: PeerId, message: RTCClientMessage) => {
       // ParticipantManager.HostInterface.playerInputs.set(clientId, message.payload);
       if (message.type === 'INPUT') {
-        ;
         rtc.broadcast(message, [clientId]);
         hostGameInstance && hostGameInstance.reconcileInputUpdate(message.payload);
       }
@@ -138,12 +140,7 @@ const App = () => {
       }
 
       if (message.type === 'COUNT') {
-        console.log('received', message.payload)
-        receivedCounts.push(message.payload);
-        const missing = missingTicks(receivedCounts)
-        if (missing.length) {
-          console.error('count missing', missing);
-        }
+        receive(clientId, message.payload);
       }
     });
 
@@ -185,8 +182,6 @@ const App = () => {
       CanvasPainter.setGhost(message.payload as unknown as RenderableGameState);
     }
 
-    const receivedCounts = [];
-
     type HostMessageHandler = (message: RTCHostMessage) => void;
     const hostMessageHandlers: Record<RTCHostMessageType, HostMessageHandler> = {
       START: onGameStart as HostMessageHandler,
@@ -194,13 +189,8 @@ const App = () => {
       PLAYER_LINEUP_CHANGE: onLineupChange as HostMessageHandler,
       STATE: onState as HostMessageHandler,
       COUNT: ({ payload }) => {
-        receivedCounts.push(payload);
-        console.log('received', payload)
+        receive('host', payload);
 
-        const missing = missingTicks(receivedCounts)
-        if (missing.length) {
-          console.error('count missing', missing);
-        }
       }
     };
 
@@ -219,7 +209,8 @@ const App = () => {
 
     let j = 0;
     setInterval(() => {
-      if (isConnected) rtc.sendToHost({ type: 'COUNT', payload: j++ });
+      if (j < 10) console.log('sending', j);
+      rtc.sendToHost({ type: 'COUNT', payload: j++ });
     }, 10);
 
     setIsConnected(true);
