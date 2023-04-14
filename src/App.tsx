@@ -49,7 +49,7 @@ const App = () => {
 
     hostGameInstance = new PredictiveGameEngine({
       localPlayerId: hostId,
-      msPerFrame: 1000 / GAME_FRAMERATE_HZ,
+      frameRateHz: GAME_FRAMERATE_HZ,
       pollLocalInput: getLocalInput,
     });
 
@@ -141,7 +141,7 @@ const App = () => {
     const rtc = new RTCClient(peerId);
     const game = new PredictiveGameEngine({
       localPlayerId: peerId,
-      msPerFrame: 1000 / GAME_FRAMERATE_HZ,
+      frameRateHz: GAME_FRAMERATE_HZ,
       pollLocalInput: getLocalInput,
     });
     // ParticipantManager.reset(peerId);

@@ -13,7 +13,7 @@ const normalise = (vector: Vector2) => {
 
 type PredictiveGameEngineOptions = {
   localPlayerId: PeerId;
-  msPerFrame: number;
+  frameRateHz: number;
   pollLocalInput: () => Input;
 }
 
@@ -50,10 +50,10 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents>  {
     replays: 0,
   };
 
-  constructor({ localPlayerId, msPerFrame, pollLocalInput }: PredictiveGameEngineOptions) {
+  constructor({ localPlayerId, frameRateHz, pollLocalInput }: PredictiveGameEngineOptions) {
     super();
     this.localPlayerId = localPlayerId;
-    this.msPerFrame = msPerFrame;
+    this.msPerFrame = Math.floor(1000 / frameRateHz);
     this.pollLocalInput = pollLocalInput;
     this.world = new RAPIER.World({ x: 0, y: 0 });
 
@@ -189,15 +189,14 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents>  {
 
   public reconcileInputUpdate(otherInput: TransmittedInputSnapshot) {
 
-    lastInputCounters[otherInput.id] ??= 0;
-    if (lastInputCounters[otherInput.id] + 1 !== otherInput.i) {
+    lastInputCounters[otherInput.id] ??= [-1];
+    if ((lastInputCounters[otherInput.id].at(-1) + 1) !== otherInput.i) {
       console.error('tick not in order', {
         id: otherInput.id,
-        difference: lastInputCounters[otherInput.id] - otherInput.i,
+        order: lastInputCounters[otherInput.id].slice(-20),
       });
     }
-    lastInputCounters[otherInput.id] = otherInput.i;
-
+    lastInputCounters[otherInput.id].push(otherInput.i);
 
     const lastLocalTickIndex = Number(this.stateInputHistory.at(-1)?.tickIndex);
     const MAX_TICKS_AHEAD = 1;
