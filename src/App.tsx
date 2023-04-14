@@ -93,9 +93,11 @@ const App = () => {
     }));
 
     const receivedCounts = [];
-
-
     let i = 0;
+    setInterval(() => {
+      if (isConnected) rtc.broadcast({ type: 'COUNT', payload: i++ });
+    }, 10);
+
     rtc.on('clientConnected', (id) => {
       console.log(id, 'joined');
 
@@ -105,9 +107,6 @@ const App = () => {
       }));
       setIsConnected(true);
 
-      setInterval(() => {
-        rtc.broadcast({ type: 'COUNT', payload: i++ });
-      }, 10);
       // ParticipantManager.HostInterface.add(
       //   id,
       //   rtc.clients.length % 2 === 0 ? Team.Red : Team.Blue,
@@ -218,9 +217,9 @@ const App = () => {
     rtc.on('disconnected', () => setIsConnected(false)); // TODO: update canvas
     await rtc.connectToHost(hostId);
 
-    let i = 0;
+    let j = 0;
     setInterval(() => {
-      rtc.sendToHost({ type: 'COUNT', payload: i++ });
+      if (isConnected) rtc.sendToHost({ type: 'COUNT', payload: j++ });
     }, 10);
 
     setIsConnected(true);
