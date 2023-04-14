@@ -127,7 +127,8 @@ const App = () => {
 
     rtc.on('clientMessage', (clientId: PeerId, message: RTCClientMessage) => {
       // ParticipantManager.HostInterface.playerInputs.set(clientId, message.payload);
-      if (message.type === 'INPUT') {;
+      if (message.type === 'INPUT') {
+        ;
         rtc.broadcast(message, [clientId]);
         hostGameInstance && hostGameInstance.reconcileInputUpdate(message.payload);
       }
@@ -142,10 +143,7 @@ const App = () => {
         receivedCounts.push(message.payload);
         const missing = missingTicks(receivedCounts)
         if (missing.length) {
-          console.error('count missing', {
-            current: message.payload,
-            missing,
-          });
+          console.error('count missing', missing);
         }
       }
     });
@@ -202,10 +200,7 @@ const App = () => {
 
         const missing = missingTicks(receivedCounts)
         if (missing.length) {
-          console.error('count missing', {
-            current: payload,
-            missing,
-          });
+          console.error('count missing', missing);
         }
       }
     };
@@ -222,7 +217,7 @@ const App = () => {
 
     rtc.on('disconnected', () => setIsConnected(false)); // TODO: update canvas
     await rtc.connectToHost(hostId);
-    
+
     let i = 0;
     setInterval(() => {
       rtc.sendToHost({ type: 'COUNT', payload: i++ });
