@@ -58,6 +58,8 @@ const App = () => {
       // if (!isLagging) 
       // console.log('sending', localInputSnapshot.i);
       rtcHost!.broadcast({ type: 'INPUT', payload: { id: hostId, ...localInputSnapshot } });
+      rtcHost!.broadcast({ type: 'STATE', payload: { id: hostId, ...renderableState } });
+
       CanvasPainter.paintGameState(renderableState);
       setTickI(localInputSnapshot.i);
     });
@@ -127,6 +129,7 @@ const App = () => {
 
       if (message.type === 'STATE') {
         CanvasPainter.setGhost(message.payload as unknown as RenderableGameState);
+        rtc.broadcast(message, [clientId]);
       }
     });
 
@@ -164,26 +167,18 @@ const App = () => {
       // ParticipantManager.ClientInterface.participants = new Map(message.payload);
     };
 
+    const onState = (message) => {
+      CanvasPainter.setGhost(message.payload as unknown as RenderableGameState);
+    }
+
     type HostMessageHandler = (message: RTCHostMessage) => void;
     const hostMessageHandlers: Record<RTCHostMessageType, HostMessageHandler> = {
       START: onGameStart as HostMessageHandler,
       INPUT: onInputUpdate as HostMessageHandler,
       PLAYER_LINEUP_CHANGE: onLineupChange as HostMessageHandler,
+      STATE: onState as HostMessageHandler,
     };
 
-    // setTimeout(() => {
-    //   const send = (i: number) => {
-    //     rtc.sendToHost({ clientCounter: i });
-    //     setTimeout(() => send(i + 1), 100);
-    //   };
-    //   send(0);
-    // }, 2000);
-
-    // const received = [];
-    // setInterval(() => {
-    //   console.log('in buffer:', received.length)
-    //   received.length = 0;
-    // }, 100);
     rtc.on('hostMessage', (message: RTCHostMessage) => {
 
       const handler = hostMessageHandlers[message.type];

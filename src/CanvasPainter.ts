@@ -97,7 +97,7 @@ const paintGameState = (gameState: RenderableGameState) => {
     return;
   }
   // paint(gameState);
-  window.requestAnimationFrame(() => paint(gameState)); // we are already inside a RAF when run on the host so technically rendering will take place on the next frame
+  window.requestAnimationFrame(() => paint(gameState));
 };
 
 export const CanvasPainter = {
