@@ -25,7 +25,7 @@ type GameEngineEvents = {
 type StateInputHistory = Array<{ tickIndex: number; localInput: InputSnapshot; snapshot: Uint8Array; }>;
 
 const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
-const lastInputCounters = {};
+const inputCounters = {};
 
 export class PredictiveGameEngine extends EventEmitter<GameEngineEvents>  {
   private localPlayerId: PeerId;
@@ -189,14 +189,23 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents>  {
 
   public reconcileInputUpdate(otherInput: TransmittedInputSnapshot) {
 
-    lastInputCounters[otherInput.id] ??= [-1];
-    if ((lastInputCounters[otherInput.id].at(-1) + 1) !== otherInput.i) {
-      console.error('tick not in order', {
+    inputCounters[otherInput.id] ??= [-1];
+    if ((inputCounters[otherInput.id].at(-1) + 1) !== otherInput.i) {
+      console.warn('tick not in order', {
         id: otherInput.id,
-        order: lastInputCounters[otherInput.id].slice(-20),
+        order: inputCounters[otherInput.id].slice(-20),
       });
     }
-    lastInputCounters[otherInput.id].push(otherInput.i);
+
+    const missing = missingTicks(inputCounters[otherInput.id])
+    if (missing.length) {
+      console.error('tick missing', {
+        id: otherInput.id,
+        missing,
+      });
+    }
+
+    inputCounters[otherInput.id].push(otherInput.i);
 
     const lastLocalTickIndex = Number(this.stateInputHistory.at(-1)?.tickIndex);
     const MAX_TICKS_AHEAD = 1;
@@ -325,3 +334,14 @@ export class PredictiveGameEngine extends EventEmitter<GameEngineEvents>  {
     }
   }
 }
+
+
+const missingTicks = (arr) => {
+  const missing = [];
+
+  for (let i = 0; i < Math.max(...arr); i++) {
+    !arr.includes(i) && missing.push(i);
+  }
+
+  return missing;
+};
