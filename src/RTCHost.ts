@@ -60,6 +60,10 @@ export class RTCHost extends EventEmitter<ConnectionHostEvents> {
     });
   }
 
+  public sendTo(peerId: PeerId, message: RTCHostMessage) {
+    this.connections.get(peerId)?.send(message);
+  }
+
   public close() {
     this.removeAllListeners();
     this.connections.forEach((c) => {

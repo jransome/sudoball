@@ -107,8 +107,7 @@ const App = () => {
 
       let i = 0;
       setInterval(() => {
-        if (i < 10) console.log('sending', i);
-        rtc.broadcast({ type: 'COUNT', payload: i++ });
+        rtc.sendTo(id, { type: 'COUNT', payload: i++ });
       }, 10);
       // ParticipantManager.HostInterface.add(
       //   id,
