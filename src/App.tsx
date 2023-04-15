@@ -107,7 +107,7 @@ const App = () => {
 
       let i = 0;
       setInterval(() => {
-        rtc.sendTo(id, { type: 'COUNT', payload: i++ });
+        rtc.sendTo(id, { type: 'COUNT', payload: { otherData: { blah: 'blah'.repeat(Math.floor(Math.random() * 100)) }, count: i++ } });
       }, 10);
       // ParticipantManager.HostInterface.add(
       //   id,
@@ -139,7 +139,7 @@ const App = () => {
       }
 
       if (message.type === 'COUNT') {
-        receive(clientId, message.payload);
+        receive(clientId, message.payload.count);
       }
     });
 
@@ -188,7 +188,8 @@ const App = () => {
       PLAYER_LINEUP_CHANGE: onLineupChange as HostMessageHandler,
       STATE: onState as HostMessageHandler,
       COUNT: ({ payload }) => {
-        receive('host', payload);
+        if (payload.count < 10) console.log('received', payload)
+        receive('host', payload.count);
 
       }
     };
@@ -209,7 +210,7 @@ const App = () => {
     let j = 0;
     setInterval(() => {
       if (j < 10) console.log('sending', j);
-      rtc.sendToHost({ type: 'COUNT', payload: j++ });
+      rtc.sendToHost({ type: 'COUNT', payload: { otherData: { blah: 'blah'.repeat(Math.floor(Math.random() * 100)) }, count: j++ } });
     }, 10);
 
     setIsConnected(true);
