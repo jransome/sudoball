@@ -18,6 +18,7 @@ const paintLine = (ctx: CanvasRenderingContext2D, strokeColour: string, vertices
     v[0] * pixelsPerMeter,
     v[1] * pixelsPerMeter,
   ));
+  ctx.lineWidth = 1.5;
   ctx.strokeStyle = strokeColour;
   ctx.stroke();
 };
@@ -32,6 +33,7 @@ const paintCircle = (ctx: CanvasRenderingContext2D, fillColour: string, strokeCo
     0, 2 * Math.PI, false,
   );
   ctx.fill();
+  ctx.lineWidth = 1.5;
   ctx.strokeStyle = strokeColour;
   ctx.stroke();
 };
@@ -49,7 +51,7 @@ const paintPlayer = (
 };
 
 const paintPitch = (ctx: CanvasRenderingContext2D) => {
-  paintLine(ctx, 'white', upperPitchVertices, PIXELS_PER_METER);
+  paintLine(ctx, 'white', upperPitchVertices, PIXELS_PER_METER); // TODO: use moveTo
   paintLine(ctx, 'white', lowerPitchVertices, PIXELS_PER_METER);
   paintLine(ctx, 'white', postPositions.slice(0, 2), PIXELS_PER_METER); // red goal line
   paintLine(ctx, 'white', postPositions.slice(-2), PIXELS_PER_METER); // blue goal line

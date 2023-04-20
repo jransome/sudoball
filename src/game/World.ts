@@ -4,9 +4,9 @@ import { InitPlayer, RenderableGameState, PeerId, Input } from '../types';
 import { EventEmitter } from '../Events';
 import { scale, subtract, sqrMagnitude, normalise, isZero } from '../vector2Utils';
 import { boundsHalfSpaces, goalSensorPositions, goalSensorSize, lowerPitchVertices, pitchMidpoint, postPositions, upperPitchVertices } from './pitch';
-import { CollisionGroup } from './collisionGroup';
+import { CollisionGroup } from './CollisionGroup';
 
-const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
+const kickBallRadiiSumSquared = (KICK_RADIUS + BALL_RADIUS) ** 2;
 
 type WorldEvents = {
   goal: (scoringTeam: Team) => void;
@@ -57,6 +57,7 @@ export class World extends EventEmitter<WorldEvents> {
 
     // ball
     this.ballRb = this.world.createRigidBody(RigidBodyDesc.dynamic()
+      .setCcdEnabled(true)
       .setTranslation(pitchMidpoint.x, pitchMidpoint.y)
       .setAdditionalMass(BALL_MASS)
       .setLinearDamping(BALL_DRAG),
@@ -142,7 +143,7 @@ export class World extends EventEmitter<WorldEvents> {
 
     if (input.kick) {
       const distanceVector = subtract(ball.translation(), player.translation());
-      if (sqrMagnitude(distanceVector) > squareOfKickAndBallRadiusSum) return;
+      if (sqrMagnitude(distanceVector) > kickBallRadiiSumSquared) return;
       const ballDirection = normalise(distanceVector);
       ball.applyImpulse(scale(ballDirection, KICK_FORCE), true);
     }

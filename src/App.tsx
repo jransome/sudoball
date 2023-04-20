@@ -107,7 +107,7 @@ const App = () => {
     rtc.startHosting();
   };
 
-  const [inputInterval, setInputInterval] = useState(33);
+  const [inputInterval, setInputInterval] = useState(1000 / INPUT_SEND_RATE_HZ);
   const ii = useRef(inputInterval);
   ii.current = inputInterval;
 
@@ -131,7 +131,6 @@ const App = () => {
     // }, 1000 / INPUT_SEND_RATE_HZ);
 
     const sendInput = () => {
-      console.log('i', ii.current);
       rtc.sendToHost({ type: 'INPUT', payload: getLocalInput() });
       setTimeout(sendInput, ii.current);
     };
