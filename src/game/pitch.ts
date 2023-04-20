@@ -1,79 +1,46 @@
-import Matter, { IChamferableBodyDefinition } from 'matter-js';
-import { GAME_BOUNDARY_DIMENSIONS, PITCH_MARGIN, GOAL_WIDTH, POST_RADIUS } from '../config';
-import { Circle, Vector2 } from '../types';
-import { collisionFilters } from './collisionFilters';
-import { serialiseVertices, scale } from './helpers';
+import { BALL_RADIUS, GAME_ENCLOSURE, GOAL_DEPTH, GOAL_HALF_WIDTH, SIDE_DEPTH } from '../config';
+import { Vector2 } from '../types';
+import { scale } from '../vector2Utils';
 
-const serialiseCircle = (body: Matter.Body): Circle => ({ position: body.position, radius: body.circleRadius! });
-const createPitchBoundaries = (containerDimensions: Vector2, containerBuffer: Vector2, goalWidth: number) => {
-  const containerCentrePoint = scale(containerDimensions, 0.5);
-  const boundaryProperties: IChamferableBodyDefinition = {
-    isStatic: true,
-    restitution: 0,
-    collisionFilter: collisionFilters.pitchBoundary,
-  };
+export const pitchMidpoint = scale(GAME_ENCLOSURE, 0.5);
 
-  const constructPitchEnd = (goalLineXPosition: number, bufferDepthX: number) => {
-    const cornerPieceWidth = (containerDimensions.y - (containerBuffer.y * 2) - goalWidth) / 2;
-    const rectangleXPosition = goalLineXPosition - (bufferDepthX / 2);
-    return [
-      Matter.Bodies.rectangle( // top corner
-        rectangleXPosition, containerBuffer.y + cornerPieceWidth / 2,
-        containerBuffer.x, cornerPieceWidth,
-        boundaryProperties,
-      ),
-      Matter.Bodies.circle( // post
-        goalLineXPosition, containerCentrePoint.y - (goalWidth / 2),
-        POST_RADIUS,
-        {
-          isStatic: true,
-          restitution: 0,
-        },
-      ),
-      Matter.Bodies.rectangle( // goal
-        rectangleXPosition, containerCentrePoint.y,
-        containerBuffer.x, goalWidth,
-        {
-          isStatic: true,
-          restitution: 0,
-          isSensor: true,
-        },
-      ),
-      Matter.Bodies.circle( // post
-        goalLineXPosition, containerCentrePoint.y + (goalWidth / 2),
-        POST_RADIUS,
-        {
-          isStatic: true,
-          restitution: 0,
-        },
-      ),
-      Matter.Bodies.rectangle( // bottom corner
-        rectangleXPosition, containerDimensions.y - containerBuffer.y - (cornerPieceWidth / 2),
-        containerBuffer.x, cornerPieceWidth,
-        boundaryProperties,
-      ),
-    ];
-  };
+const upperGoalPostY = pitchMidpoint.y - GOAL_HALF_WIDTH;
+const lowerGoalPostY = pitchMidpoint.y + GOAL_HALF_WIDTH;
 
-  return [
-    Matter.Bodies.rectangle( // top
-      containerCentrePoint.x, (containerBuffer.y / 2),
-      containerDimensions.x, containerBuffer.y,
-      boundaryProperties,
-    ),
-    Matter.Bodies.rectangle( // bottom
-      containerCentrePoint.x, containerDimensions.y - (containerBuffer.y / 2),
-      containerDimensions.x, containerBuffer.y,
-      boundaryProperties,
-    ),
-    ...constructPitchEnd(containerBuffer.x, containerBuffer.x), // left
-    ...constructPitchEnd(containerDimensions.x - containerBuffer.x, -containerBuffer.x), // right
-  ];
-};
+export const upperPitchVertices: ReadonlyArray<readonly [number, number]> = [
+  [0, upperGoalPostY], // top left goal back
+  [GOAL_DEPTH, upperGoalPostY], // top left goal post
+  [GOAL_DEPTH, SIDE_DEPTH], // top left
+  [GAME_ENCLOSURE.x - GOAL_DEPTH, SIDE_DEPTH], // top right
+  [GAME_ENCLOSURE.x - GOAL_DEPTH, upperGoalPostY], // top right goal post
+  [GAME_ENCLOSURE.x, upperGoalPostY], // top right goal back
+];
 
-export const pitchBodies = createPitchBoundaries(GAME_BOUNDARY_DIMENSIONS, PITCH_MARGIN, GOAL_WIDTH);
+export const lowerPitchVertices: ReadonlyArray<readonly [number, number]> = [
+  [0, lowerGoalPostY], // bottom left goal back
+  [GOAL_DEPTH, lowerGoalPostY], // bottom left goal post
+  [GOAL_DEPTH, GAME_ENCLOSURE.y - SIDE_DEPTH], // bottom left
+  [GAME_ENCLOSURE.x - GOAL_DEPTH, GAME_ENCLOSURE.y - SIDE_DEPTH], // bottom right
+  [GAME_ENCLOSURE.x - GOAL_DEPTH, lowerGoalPostY], // bottom right goal post
+  [GAME_ENCLOSURE.x, lowerGoalPostY], // bottom right goal back
+];
 
-export const renderablePitch = {
-  polygons: pitchBodies.filter(b => !b.circleRadius).map(serialiseVertices),
-  circles: pitchBodies.filter(b => b.circleRadius).map(serialiseCircle),
-};
+export const postPositions: ReadonlyArray<readonly [number, number]> = [
+  [GOAL_DEPTH, upperGoalPostY], // top left
+  [GOAL_DEPTH, lowerGoalPostY], // bottom left
+  [GAME_ENCLOSURE.x - GOAL_DEPTH, upperGoalPostY], // top right
+  [GAME_ENCLOSURE.x - GOAL_DEPTH, lowerGoalPostY], // bottom right
+];
+
+export const goalSensorSize = [(GOAL_DEPTH - BALL_RADIUS * 2) / 2, GOAL_HALF_WIDTH] as const;
+export const goalSensorPositions: ReadonlyArray<readonly [number, number]> = [
+  [(GOAL_DEPTH - BALL_RADIUS * 2) / 2, pitchMidpoint.y], // red
+  [GAME_ENCLOSURE.x - (GOAL_DEPTH - BALL_RADIUS * 2) / 2, pitchMidpoint.y], // blue
+];
+
+export const boundsHalfSpaces: Vector2[][] = [
+  [{ x: 0, y: 0 }, { x: 0, y: 1 }], // top (position and normal)
+  [{ x: 0, y: GAME_ENCLOSURE.y }, { x: 0, y: -1 }], // bottom
+  [{ x: 0, y: 0 }, { x: 1, y: 0 }], // left
+  [{ x: GAME_ENCLOSURE.x, y: 0 }, { x: -1, y: 0 }], // right
+];

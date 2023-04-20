@@ -24,11 +24,13 @@
     - [ ] handling client drop out
     - [ ] handling host drop out
     - [ ] spectating?
+    - [ ] send simpler input data structure?
     - [ ] mechanics
-        - [ ] starting the game
+        - [ ] teams
+        - [x] starting the game
         - [x] ability to kick the ball
         - [x] add goals and posts
-        - [ ] goal detection
+        - [x] goal detection
         - [ ] reset positions after goal
         - [ ] player stats - touches, goals, saves?
         - [ ] ending the match on time/goal limit

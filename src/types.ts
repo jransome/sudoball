@@ -1,56 +1,68 @@
 import { Team } from './config';
 
-export type RTCHostMessageType =
-  | 'GAME_UPDATE'
-  | 'PLAYER_LINEUP_CHANGE'
-
-export type RTCClientMessageType =
-  | 'CLIENT_INPUT'
-
-type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object> = {
-  type: T;
-  payload: P;
-}
-
-export type RTCGameUpdate = RTCMessage<'GAME_UPDATE', BroadcastedGameState>
-export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', [PeerId, Participant][]>
-
-export type RTCHostMessage =
-  | RTCGameUpdate
-  | RTCPlayerLineupChanged
-
-export type RTCClientInput = RTCMessage<'CLIENT_INPUT', Input>
-export type RTCClientMessage =
-  | RTCClientInput
-
 export type PeerId = string; // unique identifier for each rtc (player) connection
 
 export type Vector2 = {
   x: number;
   y: number;
 }
-export type Polygon = Vector2[];
+// export type Polygon = Vector2[];
 export type Circle = {
   position: Vector2;
   radius: number;
 };
 
-export type SerialisedPlayer = {
+export type RenderablePlayer = {
   id: PeerId;
+  team: Team;
   position: Vector2;
   isKicking: boolean;
 }
 
-export type BroadcastedGameState = {
+export type RenderableGameState = {
   ball: Vector2;
-  players: SerialisedPlayer[];
+  players: RenderablePlayer[];
 }
 
-export type Participant = {
+export type InitPlayer = {
+  peerId: PeerId;
   name: string;
   team: Team;
 }
 
-export type Input = Vector2 & {
-  isKicking: boolean;
+export type Input = {
+  movement: Vector2;
+  kick: boolean;
 }
+
+export interface TransmittedInput extends Input {
+  frameIndex: number;
+}
+
+export type PlayerInputs = Record<PeerId, Input>
+
+type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object> = {
+  type: T;
+  payload: P;
+}
+
+export type RTCHostMessageType =
+  | 'START'
+  | 'UPDATE'
+  | 'PLAYER_LINEUP_CHANGE'
+
+export type RTCHostMessage =
+  | RTCGameStarted
+  | RTCGameUpdate
+  | RTCPlayerLineupChanged
+
+export type RTCClientMessageType =
+  | 'INPUT'
+
+export type RTCClientMessage =
+  | RTCOtherPlayerInput
+
+export type RTCOtherPlayerInput = RTCMessage<'INPUT', Input>
+export type RTCGameStarted = RTCMessage<'START', InitPlayer[]>
+export type RTCGameUpdate = RTCMessage<'UPDATE', RenderableGameState>
+export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', [PeerId, InitPlayer][]>

@@ -12,16 +12,16 @@ const useStyles = createUseStyles({
 });
 
 type Props = {
-  gameDimensions: Vector2;
+  canvasResolution: Vector2;
   maxWidthPx?: number;
 }
 
-export const ResponsiveCanvas = ({ gameDimensions, maxWidthPx = 1500 }: Props) => {
+export const ResponsiveCanvas = ({ canvasResolution, maxWidthPx = 1500 }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const classes = useStyles();
 
   useEffect(() => {
-    const aspectRatio = gameDimensions.x / gameDimensions.y;
+    const aspectRatio = canvasResolution.x / canvasResolution.y;
     const canvas = canvasRef.current!;
     const context = canvas.getContext('2d', { alpha: false })!;
     CanvasPainter.setContext(context);
@@ -37,8 +37,8 @@ export const ResponsiveCanvas = ({ gameDimensions, maxWidthPx = 1500 }: Props) =
      * Therefore we scale() the canvas to compensate. Leaving the width and scale
      * as-is would mean the game renders correctly, but at a low resolution. 
      */
-    canvas.width = gameDimensions.x * CANVAS_SHARPNESS_FACTOR;
-    canvas.height = gameDimensions.y * CANVAS_SHARPNESS_FACTOR;
+    canvas.width = canvasResolution.x * CANVAS_SHARPNESS_FACTOR;
+    canvas.height = canvasResolution.y * CANVAS_SHARPNESS_FACTOR;
     context.scale(CANVAS_SHARPNESS_FACTOR, CANVAS_SHARPNESS_FACTOR);
 
     const onWindowResize = () => {

@@ -38,12 +38,12 @@ export class RTCHost extends EventEmitter<ConnectionHostEvents> {
         connection.on('open', () => {
           this.connections.set(clientPeerId, connection);
           this.emit('clientConnected', clientPeerId);
-          
+
           connection.on('data', (data) => {
             this.emit('clientMessage', clientPeerId, data as RTCClientMessage);
           });
         });
-        
+
         connection.on('close', () => {
           this.connections.delete(clientPeerId);
           connection.removeAllListeners();
@@ -53,9 +53,11 @@ export class RTCHost extends EventEmitter<ConnectionHostEvents> {
     });
   }
 
-  public broadcast(message: RTCHostMessage) {
+  public broadcast(message: RTCHostMessage, exceptions: PeerId[] = []) {
     if (!this.connections.size) return;
-    this.connections.forEach(c => c.send(message));
+    this.connections.forEach((c, id) => {
+      !exceptions.includes(id) && c.send(message);
+    });
   }
 
   public close() {
