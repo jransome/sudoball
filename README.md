@@ -10,7 +10,6 @@
 - [x] sending/collecting client inputs to update game state
 - [x] allowing clients to control independent player objects
 - [x] scale canvas to browser size (independent of game)
-- [ ] use web worker
 - [ ] game setup
     - [ ] join via url
     - [ ] allow players to choose name
