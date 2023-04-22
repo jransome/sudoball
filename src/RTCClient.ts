@@ -36,7 +36,11 @@ export class RTCClient extends EventEmitter<ConnectionClientEvents> {
       reliable: true,
     });
 
-    this.connectionEstablished = new Promise((res) => {
+    this.connectionEstablished = new Promise((res, rej) => {
+      this.peerInstance.on('error', (e) => {
+        rej(e);
+      });
+
       this.connection.on('open', () => {
         this.connection.on('data', (data) => {
           this.emit('hostMessage', data as RTCHostMessage);
