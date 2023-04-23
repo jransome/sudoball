@@ -1,6 +1,6 @@
 import { World as PhysicsWorld, RigidBody, ColliderDesc, RigidBodyDesc, ActiveEvents, EventQueue } from '@dimforge/rapier2d';
 import { PLAYER_RADIUS, Team, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS } from '../config';
-import { InitPlayer, RenderableGameState, PeerId, Input } from '../types';
+import { PlayerInfo, RenderableGameState, PeerId, Input } from '../types';
 import { EventEmitter } from '../Events';
 import { scale, subtract, sqrMagnitude, normalise, isZero } from '../vector2Utils';
 import { boundsHalfSpaces, goalSensorPositions, goalSensorSize, lowerPitchVertices, pitchMidpoint, postPositions, upperPitchVertices } from './pitch';
@@ -72,8 +72,8 @@ export class World extends EventEmitter<WorldEvents> {
     ).handle;
   }
 
-  public addPlayers(players: InitPlayer[]) {
-    this.playerRbs = new Map(players.map(({ peerId, team }, i) => {
+  public addPlayers(players: PlayerInfo[]) {
+    this.playerRbs = new Map(players.map(({ id, team }, i) => {
       const playerRb = this.world.createCollider(
         ColliderDesc.ball(PLAYER_RADIUS)
           .setCollisionGroups(CollisionGroup.Player)
@@ -84,7 +84,7 @@ export class World extends EventEmitter<WorldEvents> {
           .setLinearDamping(PLAYER_DRAG),
         ),
       ).parent()!;
-      return [peerId, playerRb];
+      return [id, playerRb];
     }));
   }
 
@@ -103,12 +103,13 @@ export class World extends EventEmitter<WorldEvents> {
   public step(inputs: Map<PeerId, Input>): RenderableGameState {
     const getPlayerInfos = Array
       .from(inputs)
-      .map(([peerId, input]) => {
-        this.applyPlayerInput(input, this.playerRbs.get(peerId)!, this.ballRb);
+      .map(([id, input]) => {
+        const playerRb = this.tryGetPlayerRb(id);
+        this.applyPlayerInput(input, playerRb, this.ballRb);
         return () => ({
-          id: peerId,
+          id,
           team: Team.Blue,
-          position: this.playerRbs.get(peerId)!.translation(),
+          position: playerRb.translation(),
           isKicking: input.kick,
         });
       });
@@ -147,5 +148,23 @@ export class World extends EventEmitter<WorldEvents> {
       const ballDirection = normalise(distanceVector);
       ball.applyImpulse(scale(ballDirection, KICK_FORCE), true);
     }
+  }
+
+  private tryGetPlayerRb(id: PeerId) {
+    const playerRb = this.playerRbs.get(id);
+    if (!playerRb) {
+      throw new InputForNonExistentPlayerError('Received input for player that does not exist in game', { id, currentPlayers: this.playerRbs });
+    }
+    return playerRb;
+  }
+}
+
+class InputForNonExistentPlayerError extends Error {
+  details: object;
+
+  constructor(message: string, details: object) {
+    super(message);
+    this.name = 'InputForNonExistentPlayerError';
+    this.details = details;
   }
 }

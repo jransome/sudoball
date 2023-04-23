@@ -1,6 +1,6 @@
 import { THRESHOLD_INPUT_CONSIDERED_LAGGING_MS, MAX_TOLERATED_INPUT_LATENCY_MS, Team } from '../config';
 import { EventEmitter } from '../Events';
-import { RenderableGameState, PeerId, Input, InitPlayer } from '../types';
+import { RenderableGameState, PeerId, Input, PlayerInfo } from '../types';
 import { World } from './World';
 
 type Options = {
@@ -27,6 +27,7 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
   private localPlayerId: PeerId;
   private nominalMsPerFrame: number;
   private isRunning = false;
+  private playerIds = new Set<PeerId>();
   private clientInputTimestamps = new Map<PeerId, number>();
   private lastKnownClientInputs = new Map<PeerId, Input>();
   private getLocalInput: () => Input;
@@ -45,7 +46,8 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
     this.world.on('goal', this.onGoal);
   }
 
-  public start(players: InitPlayer[]) {
+  public start(players: PlayerInfo[]) {
+    this.playerIds = new Set(players.map(p => p.id));
     this.world.addPlayers(players);
 
     const gameTick = () => {
@@ -109,11 +111,20 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
   }
 
   public registerInput(otherId: PeerId, otherInput: Input) {
+    if (!this.playerIds.has(otherId)) {
+      console.error('Received input for player that is not in-game', {
+        otherId,
+        playerIds: this.playerIds,
+      });
+      return;
+    }
+
     this.lastKnownClientInputs.set(otherId, otherInput);
     this.clientInputTimestamps.set(otherId, performance.now());
   }
 
   public removePlayer(id: PeerId) {
+    this.playerIds.delete(id);
     this.lastKnownClientInputs.delete(id);
     this.clientInputTimestamps.delete(id);
     this.world.removePlayer(id);

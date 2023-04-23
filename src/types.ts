@@ -24,10 +24,10 @@ export type RenderableGameState = {
   players: RenderablePlayer[];
 }
 
-export type InitPlayer = {
-  peerId: PeerId;
+export type PlayerInfo = {
+  id: PeerId;
   name: string;
-  team: Team;
+  team?: Team;
 }
 
 export type Input = {
@@ -46,6 +46,7 @@ type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends o
   payload: P;
 }
 
+// messages from host
 export type RTCHostMessageType =
   | 'START'
   | 'UPDATE'
@@ -56,13 +57,18 @@ export type RTCHostMessage =
   | RTCGameUpdate
   | RTCPlayerLineupChanged
 
+export type RTCGameStarted = RTCMessage<'START', PlayerInfo[]>
+export type RTCGameUpdate = RTCMessage<'UPDATE', RenderableGameState>
+export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', PlayerInfo[]>
+
+// messages from clients
 export type RTCClientMessageType =
+  | 'JOINED'
   | 'INPUT'
 
 export type RTCClientMessage =
+  | RTCJoinedHost
   | RTCOtherPlayerInput
 
+export type RTCJoinedHost = RTCMessage<'JOINED', PlayerInfo>
 export type RTCOtherPlayerInput = RTCMessage<'INPUT', Input>
-export type RTCGameStarted = RTCMessage<'START', InitPlayer[]>
-export type RTCGameUpdate = RTCMessage<'UPDATE', RenderableGameState>
-export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', [PeerId, InitPlayer][]>

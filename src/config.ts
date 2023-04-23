@@ -33,6 +33,7 @@ export const BALL_DRAG = 0.9;
 export const BALL_BOUNCINESS = 0.8;
 
 export enum Team {
+  Unassigned,
   Red,
   Blue,
 }
