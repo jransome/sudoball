@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { CANVAS_NATIVE_RESOLUTION, GAME_FRAMERATE_HZ, INPUT_SEND_RATE_HZ, Team } from './config';
+import { PeerId, PlayerInfo, RTCClientMessage, RTCHostMessage } from './types';
+import { CANVAS_NATIVE_RESOLUTION, GAME_FRAMERATE_HZ, INPUT_SEND_RATE_HZ } from './config';
+import { Team } from './enums';
+import { generateReadableId } from './id';
 import { RTCHost } from './RTCHost';
 import { RTCClient } from './RTCClient';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
-import { PeerId, PlayerInfo, RTCClientMessage, RTCHostMessage } from './types';
 import { CanvasPainter } from './CanvasPainter';
-import { generateReadableId } from './id';
 import { GameEngine } from './game';
 import { getLocalInput } from './input';
 import { Welcome } from './components/Welcome';
@@ -143,7 +144,7 @@ export const App = () => {
   const [hostId, setHostId] = useState<PeerId>('');
   const [activeView, setActiveView] = useState(View.Welcome);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
-  const [startGame, setStartGame] = useState<(players: PlayerInfo[]) => void>(() => () => { });
+  const [startGame, setStartGame] = useState<(players: PlayerInfo[]) => void>(() => () => undefined);
 
   const [inputInterval, setInputInterval] = useState(1000 / INPUT_SEND_RATE_HZ);
   const ii = useRef(inputInterval);

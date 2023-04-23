@@ -1,9 +1,11 @@
-import { BALL_RADIUS, KICK_RADIUS, PIXELS_PER_METER, PLAYER_RADIUS, POST_RADIUS, Team } from './config';
+import { BALL_RADIUS, KICK_RADIUS, PIXELS_PER_METER, PLAYER_RADIUS, POST_RADIUS } from './config';
+import { Team } from './enums';
 import { lowerPitchVertices, postPositions, upperPitchVertices } from './game/pitch';
 import { RenderableGameState, Circle, Vector2, PeerId } from './types';
 
 let ctx: CanvasRenderingContext2D = null!;
 const TEAM_COLOURS: Record<Team, string> = {
+  [Team.Unassigned]: 'grey',
   [Team.Red]: 'coral',
   [Team.Blue]: 'skyblue',
 };

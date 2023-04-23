@@ -1,4 +1,4 @@
-import { Team } from './config';
+import { Team } from './enums';
 
 export type PeerId = string; // unique identifier for each rtc (player) connection
 

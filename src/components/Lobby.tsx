@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
 import { PeerId, PlayerInfo } from '../types';
-import { Team } from '../config';
+import * as config from '../config';
 
 const useStyles = createUseStyles({
   container: {
@@ -82,6 +82,7 @@ export const Lobby = ({ visible, hostId, allowStartGame, players, onStartGame, o
             Start Game
           </button>
         }
+
       </div>
     </div>
   );

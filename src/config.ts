@@ -31,9 +31,3 @@ export const BALL_RADIUS = 0.35;
 export const BALL_MASS = 1;
 export const BALL_DRAG = 0.9;
 export const BALL_BOUNCINESS = 0.8;
-
-export enum Team {
-  Unassigned,
-  Red,
-  Blue,
-}

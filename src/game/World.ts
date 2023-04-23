@@ -1,6 +1,7 @@
 import { World as PhysicsWorld, RigidBody, ColliderDesc, RigidBodyDesc, ActiveEvents, EventQueue } from '@dimforge/rapier2d';
-import { PLAYER_RADIUS, Team, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS } from '../config';
 import { PlayerInfo, RenderableGameState, PeerId, Input } from '../types';
+import { PLAYER_RADIUS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS } from '../config';
+import { Team } from '../enums';
 import { EventEmitter } from '../Events';
 import { scale, subtract, sqrMagnitude, normalise, isZero } from '../vector2Utils';
 import { boundsHalfSpaces, goalSensorPositions, goalSensorSize, lowerPitchVertices, pitchMidpoint, postPositions, upperPitchVertices } from './pitch';

@@ -1,4 +1,5 @@
-import { THRESHOLD_INPUT_CONSIDERED_LAGGING_MS, MAX_TOLERATED_INPUT_LATENCY_MS, Team } from '../config';
+import { THRESHOLD_INPUT_CONSIDERED_LAGGING_MS, MAX_TOLERATED_INPUT_LATENCY_MS } from '../config';
+import { Team } from '../enums';
 import { EventEmitter } from '../Events';
 import { RenderableGameState, PeerId, Input, PlayerInfo } from '../types';
 import { World } from './World';

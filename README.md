@@ -11,12 +11,17 @@
 - [x] allowing clients to control independent player objects
 - [x] scale canvas to browser size (independent of game)
 - [ ] game setup
-    - [ ] join via url
-    - [ ] allow players to choose name
+    - [x] join via url
+    - [x] allow players to choose name
     - [ ] allow players to choose team
     - [ ] team randomiser
-    - [ ] set max number of goals
-    - [ ] set match time limit
+    - [ ] dynamic game variables
+      - [ ] max number of goals
+      - [ ] match time limit
+      - [ ] fight mode
+      - [ ] move speed
+      - [ ] kick force
+      - [ ] ball bounciness/speed
     - [ ] handling client drop out
     - [ ] handling host drop out
 - [ ] game
