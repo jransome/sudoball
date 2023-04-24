@@ -27,7 +27,7 @@ export type RenderableGameState = {
 export type PlayerInfo = {
   id: PeerId;
   name: string;
-  team?: Team;
+  team: Team;
 }
 
 export type Input = {
@@ -41,7 +41,7 @@ export interface TransmittedInput extends Input {
 
 export type PlayerInputs = Record<PeerId, Input>
 
-type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object> = {
+type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object | number> = {
   type: T;
   payload: P;
 }
@@ -65,10 +65,13 @@ export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', PlayerIn
 export type RTCClientMessageType =
   | 'JOINED'
   | 'INPUT'
+  | 'TEAM_CHANGE'
 
 export type RTCClientMessage =
   | RTCJoinedHost
   | RTCOtherPlayerInput
+  | RTCClientTeamChange
 
 export type RTCJoinedHost = RTCMessage<'JOINED', PlayerInfo>
 export type RTCOtherPlayerInput = RTCMessage<'INPUT', Input>
+export type RTCClientTeamChange = RTCMessage<'TEAM_CHANGE', Team>

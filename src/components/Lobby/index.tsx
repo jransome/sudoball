@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { PeerId, PlayerInfo } from '../types';
-import * as config from '../config';
+import { PeerId, PlayerInfo } from '../../types';
+import { Team } from '../../enums';
+import { TeamChooser } from './TeamChooser';
 
 const useStyles = createUseStyles({
   container: {
@@ -21,23 +22,15 @@ const useStyles = createUseStyles({
     display: 'flex',
     flexDirection: 'column',
   },
-  lineup: {
-    paddingTop: '20px',
-    height: '150px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
 });
 
 type Props = {
   visible: boolean;
+  selfId: PeerId;
   hostId: PeerId;
-  allowStartGame: boolean;
   players: PlayerInfo[];
   onStartGame: () => void;
-  onCancel: () => void;
+  onTeamChanged: (newTeam: Team) => void;
 }
 
 const constructInviteLink = (hostId: PeerId) => {
@@ -46,13 +39,14 @@ const constructInviteLink = (hostId: PeerId) => {
   return inviteLink.toString();
 };
 
-export const Lobby = ({ visible, hostId, allowStartGame, players, onStartGame, onCancel }: Props) => {
+export const Lobby = ({ visible, selfId, hostId, players, onStartGame, onTeamChanged }: Props) => {
   const classes = useStyles();
   const inviteLink = constructInviteLink(hostId);
   const [isCopied, setIsCopied] = useState(false);
 
   if (!visible) return null;
 
+  const someUnassigned = players.some(p => p.team === Team.Unassigned);
   const onCopyClick = () => {
     navigator.clipboard.writeText(inviteLink);
     setIsCopied(true);
@@ -72,18 +66,18 @@ export const Lobby = ({ visible, hostId, allowStartGame, players, onStartGame, o
           </button>
         </div>
 
-        <ul className={classes.lineup}>
-          {players.map(({ name }, i) => <li key={i}>{name}</li>)}
+        <TeamChooser
+          onSelfTeamChange={onTeamChanged}
+          players={players}
+        />
 
-        </ul>
-
-        {allowStartGame &&
-          <button id='join-game' onClick={() => onStartGame()}>
-            Start Game
+        {selfId === hostId &&
+          <button id='join-game' onClick={() => onStartGame()} disabled={someUnassigned} >
+            {someUnassigned ? 'Waiting for players to choose teams...' : 'Start Game'}
           </button>
         }
-
       </div>
     </div>
   );
 };
+
