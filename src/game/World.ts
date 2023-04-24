@@ -5,7 +5,7 @@ import { Team } from '../enums';
 import { EventEmitter } from '../Events';
 import { scale, subtract, sqrMagnitude, normalise, isZero } from '../vector2Utils';
 import { boundsHalfSpaces, goalSensorPositions, goalSensorSize, lowerPitchVertices, pitchMidpoint, postPositions, upperPitchVertices } from './pitch';
-import { CollisionGroup } from './CollisionGroup';
+import { CollisionGroup } from './CollisionGroups';
 
 const kickBallRadiiSumSquared = (KICK_RADIUS + BALL_RADIUS) ** 2;
 
