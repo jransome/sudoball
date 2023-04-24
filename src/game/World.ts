@@ -74,7 +74,7 @@ export class World extends EventEmitter<WorldEvents> {
   }
 
   public addPlayers(players: PlayerInfo[]) {
-    this.playerRbs = new Map(players.map(({ id, team }, i) => {
+    this.playerRbs = new Map(players.map(({ id }, i) => {
       const playerRb = this.world.createCollider(
         ColliderDesc.ball(PLAYER_RADIUS)
           .setCollisionGroups(CollisionGroup.Player)

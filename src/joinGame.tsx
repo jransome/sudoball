@@ -8,7 +8,7 @@ import { INPUT_SEND_RATE_HZ } from './config';
 
 const inputSendIntervalMs = 1000 / INPUT_SEND_RATE_HZ;
 
-export const joinGame = async (hostId: PeerId, playerName: string, onPlayerLineupChange, onGameStart) => {
+export const joinGame = async (hostId: PeerId, playerName: string, onPlayerLineupChange: any, onGameStart: any) => {
   const peerId = generateReadableId();
   const rtc = new RTCClient(peerId);
 
