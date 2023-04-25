@@ -22,8 +22,8 @@ export const CANVAS_NATIVE_RESOLUTION = scale(GAME_ENCLOSURE, PIXELS_PER_METER);
 export const PLAYER_RADIUS = 0.5;
 export const PLAYER_MASS = 10;
 export const PLAYER_DRAG = 4;
-export const MOVE_FORCE = 4.5;
-export const KICK_FORCE = 16;
+export const MOVE_FORCE = 5;
+export const KICK_FORCE = 32;
 export const KICK_RADIUS = 0.75;
 
 // ball

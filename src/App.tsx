@@ -82,7 +82,7 @@ export const App = () => {
 
       <h4>Players:</h4>
       <ul>
-        {players.map(({ id, name }, i) => <li key={i}>{name} | {id} {id === hostId && '(you)'}</li>)}
+        {players.map(({ id, name }, i) => <li key={i}>{name} | {id} {id === selfId && '(you)'}</li>)}
       </ul>
     </>
   );
