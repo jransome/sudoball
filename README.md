@@ -13,7 +13,7 @@
 - [ ] game setup
     - [x] join via url
     - [x] allow players to choose name
-    - [ ] allow players to choose team
+    - [x] allow players to choose team
     - [ ] team randomiser
     - [ ] dynamic game variables
       - [ ] max number of goals
@@ -30,8 +30,9 @@
     - [ ] handling host drop out
     - [ ] spectating?
     - [ ] send simpler input data structure?
+    - [ ] better initial positioning of players
     - [ ] mechanics
-        - [ ] teams
+        - [x] teams
         - [x] starting the game
         - [x] ability to kick the ball
         - [x] add goals and posts
@@ -48,3 +49,6 @@
         - [ ] meme avatars
         - [ ] sfx on kick/scoring
         - [ ] game summary on match end
+
+### Bugs
+  - [ ] can't use arrow keys/space to type name (or anything else) as these are game controls

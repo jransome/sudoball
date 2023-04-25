@@ -12,16 +12,24 @@ export type Circle = {
   radius: number;
 };
 
-export type RenderablePlayer = {
-  id: PeerId;
-  team: Team;
-  position: Vector2;
-  isKicking: boolean;
+export type TransmittedGameState = {
+  ball: Vector2;
+  players: {
+    id: PeerId;
+    position: Vector2;
+    isKicking: boolean;
+  }[];
 }
 
 export type RenderableGameState = {
-  ball: Vector2;
-  players: RenderablePlayer[];
+  ballPosition: Vector2;
+  players: {
+    name: string;
+    team: Team;
+    position: Vector2;
+    isKicking: boolean;
+    isLocalPlayer: boolean;
+  }[];
 }
 
 export type PlayerInfo = {
@@ -58,7 +66,7 @@ export type RTCHostMessage =
   | RTCPlayerLineupChanged
 
 export type RTCGameStarted = RTCMessage<'START', PlayerInfo[]>
-export type RTCGameUpdate = RTCMessage<'UPDATE', RenderableGameState>
+export type RTCGameUpdate = RTCMessage<'UPDATE', TransmittedGameState>
 export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', PlayerInfo[]>
 
 // messages from clients

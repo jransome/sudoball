@@ -39,9 +39,6 @@ export const App = () => {
   
   const [hostInterface, setHostInterface] = useState<ReturnType<typeof createGame>>();
   const [clientInterface, setClientInterface] = useState<Awaited<ReturnType<typeof joinGame>>>();
-  // const [inputInterval, setInputInterval] = useState(1000 / INPUT_SEND_RATE_HZ);
-  // const ii = useRef(inputInterval);
-  // ii.current = inputInterval;
 
   return (
     <>
@@ -76,8 +73,6 @@ export const App = () => {
           clientInterface && clientInterface.requestTeamChange(newTeam);
         }}
       />
-
-      {/* {selfId !== hostId && <input type='number' value={inputInterval} onChange={ev => setInputInterval(+ev.target.value)} />} */}
 
       <div className={classes.controls}>
         <h4>Sudoball</h4>

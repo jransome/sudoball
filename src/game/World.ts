@@ -1,6 +1,6 @@
 import { World as PhysicsWorld, RigidBody, ColliderDesc, RigidBodyDesc, ActiveEvents, EventQueue } from '@dimforge/rapier2d';
-import { PlayerInfo, RenderableGameState, PeerId, Input } from '../types';
-import { PLAYER_RADIUS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS } from '../config';
+import { PlayerInfo, TransmittedGameState, PeerId, Input } from '../types';
+import { PLAYER_RADIUS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS, GAME_ENCLOSURE } from '../config';
 import { Team } from '../enums';
 import { EventEmitter } from '../Events';
 import { scale, subtract, sqrMagnitude, normalise, isZero } from '../vector2Utils';
@@ -74,13 +74,14 @@ export class World extends EventEmitter<WorldEvents> {
   }
 
   public addPlayers(players: PlayerInfo[]) {
-    this.playerRbs = new Map(players.map(({ id }, i) => {
+    this.playerRbs = new Map(players.map(({ id, team }) => {
+      const playerXPosition = GAME_ENCLOSURE.x * (team === Team.Red ? 0.25 : 0.75);
       const playerRb = this.world.createCollider(
         ColliderDesc.ball(PLAYER_RADIUS)
           .setCollisionGroups(CollisionGroup.Player)
           .setFriction(0),
         this.world.createRigidBody(RigidBodyDesc.dynamic()
-          .setTranslation(10 * (i + 1), 10 * (i + 1))
+          .setTranslation(playerXPosition, pitchMidpoint.y)
           .setAdditionalMass(PLAYER_MASS)
           .setLinearDamping(PLAYER_DRAG),
         ),
@@ -101,15 +102,14 @@ export class World extends EventEmitter<WorldEvents> {
     this.world.free();
   }
 
-  public step(inputs: Map<PeerId, Input>): RenderableGameState {
-    const getPlayerInfos = Array
+  public step(inputs: Map<PeerId, Input>): TransmittedGameState {
+    const getPlayerState = Array
       .from(inputs)
       .map(([id, input]) => {
         const playerRb = this.tryGetPlayerRb(id);
         this.applyPlayerInput(input, playerRb, this.ballRb);
         return () => ({
           id,
-          team: Team.Blue,
           position: playerRb.translation(),
           isKicking: input.kick,
         });
@@ -134,7 +134,7 @@ export class World extends EventEmitter<WorldEvents> {
 
     return {
       ball: this.ballRb.translation(),
-      players: getPlayerInfos.map(getInfo => getInfo()),
+      players: getPlayerState.map(getState => getState()),
     };
   }
 

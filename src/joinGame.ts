@@ -1,4 +1,4 @@
-import { PeerId, RTCHostMessage } from './types';
+import { PeerId, PlayerInfo, RTCHostMessage, RenderableGameState, TransmittedGameState } from './types';
 import { Team } from './enums';
 import { generateReadableId } from './id';
 import { RTCClient } from './RTCClient';
@@ -8,22 +8,45 @@ import { INPUT_SEND_RATE_HZ } from './config';
 
 const inputSendIntervalMs = 1000 / INPUT_SEND_RATE_HZ;
 
-export const joinGame = async (hostId: PeerId, playerName: string, onPlayerLineupChange: any, onGameStart: any) => {
+const stateRendererFactory = (playerLookup: Map<PeerId, PlayerInfo>, selfId: PeerId) =>
+  (gameState: TransmittedGameState): RenderableGameState => ({
+    ballPosition: gameState.ball,
+    players: gameState.players.map((p) => {
+      const playerInfo = playerLookup.get(p.id);
+      if (!playerInfo) {
+        console.error('Unrecognised player id', p);
+      }
+
+      return {
+        ...p,
+        ...playerInfo!,
+        isLocalPlayer: p.id === selfId,
+      };
+    }),
+  });
+
+export const joinGame = async (
+  hostId: PeerId,
+  playerName: string,
+  onPlayerLineupChange: (newLineup: PlayerInfo[]) => void,
+  onGameStart: () => void,
+) => {
   const peerId = generateReadableId();
   const rtc = new RTCClient(peerId);
 
-  let isPlaying = false;
+  let gameInProgress = false;
+  let stateToRender: (gameState: TransmittedGameState) => RenderableGameState = null!;
   console.log('me:', peerId);
 
   const sendInput = () => {
-    if (!isPlaying) return;
+    if (!gameInProgress) return;
     rtc.sendToHost({ type: 'INPUT', payload: getLocalInput() });
     setTimeout(sendInput, inputSendIntervalMs);
   };
 
   rtc.on('hostMessage', (message: RTCHostMessage) => {
     if (message.type === 'UPDATE') {
-      CanvasPainter.paintGameState(peerId, message.payload);
+      CanvasPainter.paintGameState(stateToRender(message.payload));
       return;
     }
 
@@ -33,7 +56,8 @@ export const joinGame = async (hostId: PeerId, playerName: string, onPlayerLineu
     }
 
     if (message.type === 'START') {
-      isPlaying = true;
+      gameInProgress = true;
+      stateToRender = stateRendererFactory(new Map(message.payload.map(p => [p.id, p])), peerId);
       onPlayerLineupChange(message.payload);
       onGameStart();
       sendInput();
@@ -44,7 +68,7 @@ export const joinGame = async (hostId: PeerId, playerName: string, onPlayerLineu
   });
 
   rtc.on('disconnected', () => {
-    isPlaying = false;
+    gameInProgress = false;
     alert('Disconnected from host');
     // TODO: wipe canvas
   });

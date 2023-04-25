@@ -1,7 +1,7 @@
 import { THRESHOLD_INPUT_CONSIDERED_LAGGING_MS, MAX_TOLERATED_INPUT_LATENCY_MS } from '../config';
 import { Team } from '../enums';
 import { EventEmitter } from '../Events';
-import { RenderableGameState, PeerId, Input, PlayerInfo } from '../types';
+import { TransmittedGameState, PeerId, Input, PlayerInfo } from '../types';
 import { World } from './World';
 
 type Options = {
@@ -11,19 +11,9 @@ type Options = {
 }
 
 type GameEngineEvents = {
-  update: (gameState: RenderableGameState) => void;
+  update: (gameState: TransmittedGameState) => void;
 }
 
-/**
- * Only advances when some input is received from clients
- * Doesn't matter what order they arrive in as out of order input is rare
- * On each tick:
- * check the last input from each player was received within the grace period
- * it is assumed that this input is for the next frame (even though it may not be)
- * if so, advance the engine
- * if not, wait
- * it will be up to something else to notify the engine for dropped players
- */
 export class GameEngine extends EventEmitter<GameEngineEvents>  {
   private localPlayerId: PeerId;
   private nominalMsPerFrame: number;

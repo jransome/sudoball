@@ -7,13 +7,11 @@ import { CanvasPainter } from './CanvasPainter';
 import { GameEngine } from './game';
 import { getLocalInput } from './input';
 
-
 export const createGame = (
   hostId: PeerId,
   hostPlayerName: string,
   setPlayers: Dispatch<React.SetStateAction<PlayerInfo[]>>,
 ) => {
-
   const rtc = new RTCHost(hostId);
   const game = new GameEngine({
     localPlayerId: hostId,
@@ -57,9 +55,27 @@ export const createGame = (
 
   const startGame = (players: PlayerInfo[]) => {
     rtc.broadcast({ type: 'START', payload: players });
-    game.on('update', (renderableState) => {
-      rtc.broadcast({ type: 'UPDATE', payload: renderableState });
-      CanvasPainter.paintGameState(hostId, renderableState);
+
+    const playerLookup = new Map(players.map(p => [p.id, p])); // maybe lives in the renderer
+
+    game.on('update', (newState) => {
+      rtc.broadcast({ type: 'UPDATE', payload: newState });
+      const renderableState = {
+        ballPosition: newState.ball,
+        players: newState.players.map((p) => {
+          const playerInfo = playerLookup.get(p.id);
+          if (!playerInfo) {
+            console.error('Unrecognised player id', p);
+          }
+
+          return {
+            ...p,
+            ...playerInfo!,
+            isLocalPlayer: p.id === hostId,
+          };
+        }),
+      };
+      CanvasPainter.paintGameState(renderableState);
     });
 
     game.start(players);
