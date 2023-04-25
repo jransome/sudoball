@@ -1,27 +1,4 @@
-import { Team } from './config';
-
-export type RTCHostMessageType =
-  | 'GAME_UPDATE'
-  | 'PLAYER_LINEUP_CHANGE'
-
-export type RTCClientMessageType =
-  | 'CLIENT_INPUT'
-
-type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object> = {
-  type: T;
-  payload: P;
-}
-
-export type RTCGameUpdate = RTCMessage<'GAME_UPDATE', BroadcastedGameState>
-export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', [PeerId, Participant][]>
-
-export type RTCHostMessage =
-  | RTCGameUpdate
-  | RTCPlayerLineupChanged
-
-export type RTCClientInput = RTCMessage<'CLIENT_INPUT', Input>
-export type RTCClientMessage =
-  | RTCClientInput
+import { Team } from './enums';
 
 export type PeerId = string; // unique identifier for each rtc (player) connection
 
@@ -29,26 +6,80 @@ export type Vector2 = {
   x: number;
   y: number;
 }
-
-export type Polygon = Vector2[];
-
-export type SerialisedPlayer = {
-  id: PeerId;
+// export type Polygon = Vector2[];
+export type Circle = {
   position: Vector2;
-  isKicking: boolean;
-}
+  radius: number;
+};
 
-export type BroadcastedGameState = {
-  pitchBoundaries: Polygon[]; // TODO: remove
+export type TransmittedGameState = {
   ball: Vector2;
-  players: SerialisedPlayer[];
+  players: {
+    id: PeerId;
+    position: Vector2;
+    isKicking: boolean;
+  }[];
 }
 
-export type Participant = {
+export type RenderableGameState = {
+  ballPosition: Vector2;
+  players: {
+    name: string;
+    team: Team;
+    position: Vector2;
+    isKicking: boolean;
+    isLocalPlayer: boolean;
+  }[];
+}
+
+export type PlayerInfo = {
+  id: PeerId;
   name: string;
   team: Team;
 }
 
-export type Input = Vector2 & {
-  isKicking: boolean;
+export type Input = {
+  movement: Vector2;
+  kick: boolean;
 }
+
+export interface TransmittedInput extends Input {
+  frameIndex: number;
+}
+
+export type PlayerInputs = Record<PeerId, Input>
+
+type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object | number> = {
+  type: T;
+  payload: P;
+}
+
+// messages from host
+export type RTCHostMessageType =
+  | 'START'
+  | 'UPDATE'
+  | 'PLAYER_LINEUP_CHANGE'
+
+export type RTCHostMessage =
+  | RTCGameStarted
+  | RTCGameUpdate
+  | RTCPlayerLineupChanged
+
+export type RTCGameStarted = RTCMessage<'START', PlayerInfo[]>
+export type RTCGameUpdate = RTCMessage<'UPDATE', TransmittedGameState>
+export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', PlayerInfo[]>
+
+// messages from clients
+export type RTCClientMessageType =
+  | 'JOINED'
+  | 'INPUT'
+  | 'TEAM_CHANGE'
+
+export type RTCClientMessage =
+  | RTCJoinedHost
+  | RTCOtherPlayerInput
+  | RTCClientTeamChange
+
+export type RTCJoinedHost = RTCMessage<'JOINED', PlayerInfo>
+export type RTCOtherPlayerInput = RTCMessage<'INPUT', Input>
+export type RTCClientTeamChange = RTCMessage<'TEAM_CHANGE', Team>

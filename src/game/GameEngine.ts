@@ -1,105 +1,127 @@
-import Matter from 'matter-js';
-import { MOVE_FORCE, GAME_BOUNDARY_DIMENSIONS, FRAMERATE_HZ, BALL_RADIUS, KICK_FORCE, Team, KICK_COOLDOWN_MS, KICK_RADIUS, GOAL_WIDTH, PITCH_MARGIN } from '../config';
+import { THRESHOLD_INPUT_CONSIDERED_LAGGING_MS, MAX_TOLERATED_INPUT_LATENCY_MS } from '../config';
+import { Team } from '../enums';
 import { EventEmitter } from '../Events';
-import { PeerId, BroadcastedGameState, Input } from '../types';
-import { createPitchBoundaries, createGameBoundary, serialiseVertices, serialisePlayers, createBallBody, scale, subtract, normalise, sqrMagnitude, createPlayerBody } from './helpers';
+import { TransmittedGameState, PeerId, Input, PlayerInfo } from '../types';
+import { World } from './World';
 
-// Reduce velocity threshold required for engine to calculate ball bounces
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(Matter.Resolver as any)._restingThresh = 0.04;
+type Options = {
+  localPlayerId: PeerId;
+  frameRateHz: number;
+  pollLocalInput: () => Input;
+}
 
 type GameEngineEvents = {
-  update: (
-    gameState: BroadcastedGameState,
-    applyInputs: (inputs: Map<PeerId, Input>) => void,
-  ) => void;
-  gameEvent: (eventName: string) => void;
+  update: (gameState: TransmittedGameState) => void;
 }
 
-export type PlayerGameObject = {
-  team: Team;
-  body: Matter.Body;
-  isKicking: boolean;
-  lastKick: number;
-}
+export class GameEngine extends EventEmitter<GameEngineEvents>  {
+  private localPlayerId: PeerId;
+  private nominalMsPerFrame: number;
+  private isRunning = false;
+  private playerIds = new Set<PeerId>();
+  private clientInputTimestamps = new Map<PeerId, number>();
+  private lastKnownClientInputs = new Map<PeerId, Input>();
+  private getLocalInput: () => Input;
+  private world: World;
 
-const engineTickPeriod = 1000 / FRAMERATE_HZ;
-const squareOfKickAndBallRadiusSum = (KICK_RADIUS + BALL_RADIUS) ** 2;
-
-class Engine extends EventEmitter<GameEngineEvents> {
-  private gameIntervalId!: number;
-  private players: Map<PeerId, PlayerGameObject> = new Map();
-  private engine!: Matter.Engine;
-
-  constructor() {
-    super();
-    this.engine = Matter.Engine.create();
-    this.engine.gravity.scale = 0;
+  get running() {
+    return this.isRunning;
   }
 
-  public start() {
-    const pitchBoundaries = createPitchBoundaries(GAME_BOUNDARY_DIMENSIONS, PITCH_MARGIN, GOAL_WIDTH);
-    const ball = createBallBody(scale(GAME_BOUNDARY_DIMENSIONS, 0.5));
+  constructor({ localPlayerId, frameRateHz, pollLocalInput }: Options) {
+    super();
+    this.localPlayerId = localPlayerId;
+    this.nominalMsPerFrame = Math.floor(1000 / frameRateHz);
+    this.getLocalInput = pollLocalInput;
+    this.world = new World();
+    this.world.on('goal', this.onGoal);
+  }
 
-    Matter.Composite.add(this.engine.world, [
-      ...createGameBoundary(GAME_BOUNDARY_DIMENSIONS),
-      ...pitchBoundaries,
-      ball,
-    ]);
+  public start(players: PlayerInfo[]) {
+    this.playerIds = new Set(players.map(p => p.id));
+    this.world.addPlayers(players);
 
-    const applyInputs = (inputs: Map<PeerId, Input>) => Array
-      .from(inputs)
-      .forEach(([playerId, { x, y, isKicking }]) => {
-        const player = this.players.get(playerId);
-        if (!player) {
-          console.error('received input for player that does not exist in game!', playerId);
+    const gameTick = () => {
+      if (!this.isRunning) return;
+
+      const now = performance.now();
+      const laggingClients = Array
+        .from(this.clientInputTimestamps.entries())
+        .filter(entry => now > entry[1] + THRESHOLD_INPUT_CONSIDERED_LAGGING_MS)
+        .map(([id, lastInputTimestamp]) => ({
+          id,
+          latency: now - (lastInputTimestamp + THRESHOLD_INPUT_CONSIDERED_LAGGING_MS),
+          exceededMaxTolerated: now > (lastInputTimestamp + MAX_TOLERATED_INPUT_LATENCY_MS),
+        }));
+
+      if (laggingClients.length) {
+        console.warn(`Not received inputs for at least ${THRESHOLD_INPUT_CONSIDERED_LAGGING_MS}ms from:`, laggingClients);
+        /**
+         * If every lagging client is beyond the max tolerated, then assume they should have disconnected and carry on without them.
+         * If some are just lagging a bit, then slow the game down to let them catch up.
+         */
+        if (!laggingClients.every(l => l.exceededMaxTolerated)) {
+          setTimeout(() => gameTick(), this.nominalMsPerFrame);
           return;
         }
-        player.isKicking = isKicking;
-        Matter.Body.applyForce(player.body, player.body.position, scale({ x, y }, MOVE_FORCE));
+        console.warn('Ignoring lagging clients');
+      }
 
-        if (isKicking && Date.now() > player.lastKick + KICK_COOLDOWN_MS) {
-          const distanceVector = subtract(ball.position, player.body.position);
-          if (sqrMagnitude(distanceVector) > squareOfKickAndBallRadiusSum) return;
-          const ballDirection = normalise(distanceVector);
-          Matter.Body.applyForce(ball, ball.position, scale(ballDirection, KICK_FORCE));
-          player.lastKick = Date.now();
-        }
+      const inputs = new Map([
+        ...this.lastKnownClientInputs,
+        [this.localPlayerId, this.getLocalInput()],
+      ]);
+      this.emit('update', this.world.step(inputs));
+
+      setTimeout(() => gameTick(), this.nominalMsPerFrame);
+    };
+
+    this.isRunning = true;
+    gameTick();
+
+    // const onAnimationFrame = (timestamp: DOMHighResTimeStamp) => {
+    //   // if (!this.isRunning) return;
+    //   const deltaTime = timestamp - lastFrameTimeMs;
+    //   if (deltaTime > this.msPerFrame) {
+    //     gameLoop();
+    //     lastFrameTimeMs = timestamp - (deltaTime % this.msPerFrame);
+    //   }
+    //   window.requestAnimationFrame(onAnimationFrame);
+    // };
+
+    // this.isRunning = true;
+    // let lastFrameTimeMs: DOMHighResTimeStamp = performance.now();
+    // onAnimationFrame(lastFrameTimeMs);
+
+  }
+
+  public shutdown() {
+    this.removeAllListeners();
+    this.isRunning = false;
+    this.world.dispose();
+  }
+
+  public registerInput(otherId: PeerId, otherInput: Input) {
+    if (!this.playerIds.has(otherId)) {
+      console.error('Received input for player that is not in-game', {
+        otherId,
+        playerIds: this.playerIds,
       });
+      return;
+    }
 
-    this.gameIntervalId = window.setInterval(() => {
-      const gameState = {
-        pitchBoundaries: pitchBoundaries.map(serialiseVertices),
-        ball: ball.position,
-        players: Array.from(this.players).map(serialisePlayers),
-      };
-
-      this.emit('update', gameState, applyInputs);
-      Matter.Engine.update(this.engine, engineTickPeriod);
-    }, engineTickPeriod);
-  }
-
-  public stop() {
-    if (this.gameIntervalId)
-      window.clearInterval(this.gameIntervalId);
-
-    // TODO: teardown engine
-  }
-
-  public addPlayer(id: PeerId, team: Team) {
-    const body = createPlayerBody({ x: 100, y: 150 });
-    this.players.set(id, { body, team, isKicking: false, lastKick: Date.now() });
-    Matter.Composite.add(this.engine.world, body);
+    this.lastKnownClientInputs.set(otherId, otherInput);
+    this.clientInputTimestamps.set(otherId, performance.now());
   }
 
   public removePlayer(id: PeerId) {
-    const playerBody = this.players.get(id)?.body;
-    if (!this.players.delete(id)) {
-      console.error('tried to remove player from engine but they did not exist!', id);
-      return;
-    }
-    Matter.Composite.remove(this.engine.world, playerBody!);
+    this.playerIds.delete(id);
+    this.lastKnownClientInputs.delete(id);
+    this.clientInputTimestamps.delete(id);
+    this.world.removePlayer(id);
+  }
+
+  private onGoal(scoringTeam: Team) {
+    console.log(scoringTeam, 'scored');
   }
 }
-
-export const GameEngine = new Engine();

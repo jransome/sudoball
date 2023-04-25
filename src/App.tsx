@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { GAME_BOUNDARY_DIMENSIONS, Team } from './config';
-import { ConnectionClient } from './rtc/ConnectionClient';
-import { ConnectionHost } from './rtc/ConnectionHost';
+import { PeerId, PlayerInfo } from './types';
+import { CANVAS_NATIVE_RESOLUTION } from './config';
+import { generateReadableId } from './id';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
-import { GameEngine } from './game/GameEngine';
-import { getLocalInput } from './controls';
-import { PeerId, RTCClientInput, RTCGameUpdate, RTCHostMessage, RTCHostMessageType, RTCPlayerLineupChanged } from './types';
-import { CanvasPainter } from './CanvasPainter';
-import { ParticipantManager } from './participants';
+import { Welcome } from './components/Welcome';
+import { Lobby } from './components/Lobby';
+import { joinGame } from './joinGame';
+import { createGame } from './createGame';
+import { Team } from './enums';
 
 const useStyles = createUseStyles({
   controls: {
@@ -23,144 +23,67 @@ const useStyles = createUseStyles({
   },
 });
 
-const startEngine = (host: ConnectionHost) => {
-  GameEngine.on('update', (gameState, applyInputs) => {
-    const playerInputs = ParticipantManager.HostInterface.playerInputs.set(host.peerId, getLocalInput());
-    applyInputs(playerInputs);
+export enum View {
+  Welcome,
+  Lobby,
+  Game,
+  About,
+}
 
-    host.broadcast({ type: 'GAME_UPDATE', payload: gameState });
-    CanvasPainter.paint(gameState);
-  });
-
-  // GameEngine.on('gameEvent', (gameEvent) => {
-  //   /**
-  //    * any event that changes the ui, eg:
-  //    * game started
-  //    * goal scored
-  //    * game ended
-  //   */
-  // });
-
-  ParticipantManager.HostInterface.add(
-    host.peerId,
-    host.clients.length % 2 === 0 ? Team.Red : Team.Blue,
-  );
-  GameEngine.start();
-};
-
-const App = () => {
+export const App = () => {
   const classes = useStyles();
-
-  const [hostId, setHostId] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [attemptingConnection, setAttemptingConnection] = useState(false);
-  const [clients, setClients] = useState<string[]>([]);
-
-  const createGame = () => {
-    const rtc = new ConnectionHost();
-    ParticipantManager.reset(rtc.peerId);
-
-    startEngine(rtc);
-
-    rtc.on('clientConnected', (id) => {
-      setClients(rtc.clients);
-      setIsConnected(true);
-      ParticipantManager.HostInterface.add(
-        id,
-        rtc.clients.length % 2 === 0 ? Team.Red : Team.Blue,
-      );
-      rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
-    });
-
-    rtc.on('clientDisconnected', (id) => {
-      setClients(rtc.clients);
-      setIsConnected(rtc.clients.length > 0);
-      ParticipantManager.HostInterface.remove(id);
-      rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: ParticipantManager.HostInterface.participants });
-    });
-
-    rtc.on('clientMessage', (clientId: PeerId, message: RTCClientInput) => {
-      ParticipantManager.HostInterface.playerInputs.set(clientId, message.payload);
-    });
-
-    rtc.startHosting();
-
-    setHostId(rtc.peerId);
-  };
-
-  const joinGame = async (hostId: string) => {
-    const rtc = new ConnectionClient();
-    ParticipantManager.reset(rtc.peerId);
-
-    const onGameUpdate = (message: RTCGameUpdate) => {
-      rtc.sendToHost({ type: 'CLIENT_INPUT', payload: getLocalInput() });
-      CanvasPainter.paint(message.payload);
-    };
-    const onLineupChange = (message: RTCPlayerLineupChanged) => {
-      ParticipantManager.ClientInterface.participants = new Map(message.payload);
-    };
-
-    type HostMessageHandler = (message: RTCHostMessage) => void;
-    const hostMessageHandlers: Record<RTCHostMessageType, HostMessageHandler> = {
-      GAME_UPDATE: onGameUpdate as HostMessageHandler,
-      PLAYER_LINEUP_CHANGE: onLineupChange as HostMessageHandler,
-    };
-
-    rtc.on('hostMessage', (message: RTCHostMessage) => {
-      const handler = hostMessageHandlers[message.type];
-      if (!handler) {
-        console.error('received unprocessable message from host!', message);
-        return;
-      }
-      handler(message);
-    });
-
-    rtc.on('disconnected', () => setIsConnected(false));
-    await rtc.connectToHost(hostId);
-    setIsConnected(true);
-  };
+  const [selfId] = useState<PeerId>(generateReadableId());
+  const [hostId, setHostId] = useState<PeerId>('');
+  const [activeView, setActiveView] = useState(View.Welcome);
+  const [players, setPlayers] = useState<PlayerInfo[]>([]);
+  
+  const [hostInterface, setHostInterface] = useState<ReturnType<typeof createGame>>();
+  const [clientInterface, setClientInterface] = useState<Awaited<ReturnType<typeof joinGame>>>();
 
   return (
     <>
+      <Welcome
+        visible={activeView === View.Welcome}
+        invitationHostId={new URLSearchParams(document.location.search).get('hostId') || ''}
+        onCreateGame={(name) => {
+          const host = createGame(selfId, name, setPlayers);
+          setHostInterface(host);
+          setHostId(selfId);
+          setActiveView(View.Lobby);
+        }}
+        onJoinGame={async (hostId, name) => {
+          const client = await joinGame(hostId, name, setPlayers, () => setActiveView(View.Game));
+          setClientInterface(client);
+          setHostId(hostId);
+          setActiveView(View.Lobby);
+        }}
+      />
+
+      <Lobby
+        visible={activeView === View.Lobby}
+        selfId={selfId}
+        hostId={hostId}
+        players={players}
+        onStartGame={() => {
+          setActiveView(View.Game);
+          hostInterface?.startGame(players);
+        }}
+        onTeamChanged={(newTeam: Team) => { 
+          hostInterface && hostInterface.changeHostTeam(newTeam);
+          clientInterface && clientInterface.requestTeamChange(newTeam);
+        }}
+      />
+
       <div className={classes.controls}>
         <h4>Sudoball</h4>
-        <h3 className={isConnected ? classes.connected : classes.disconnected}>
-          {isConnected ? 'Channel Open' : 'Disconnected'}
-        </h3>
-        <button
-          id='create-game'
-          onClick={() => {
-            createGame();
-            setAttemptingConnection(true);
-          }}
-          disabled={!!hostId || attemptingConnection || isConnected}
-        >
-          Create Game
-        </button>
-
-        <button
-          id='join-game'
-          onClick={() => {
-            joinGame(hostId);
-            setAttemptingConnection(true);
-          }}
-          disabled={!hostId || attemptingConnection || isConnected}
-        >
-          Join Game
-        </button>
-        <input id='host-id' type='text' value={hostId} onChange={ev => setHostId(ev.target.value)} />
-        <button onClick={() => navigator.clipboard.writeText(hostId)}>copy</button>
-
       </div>
-      <ResponsiveCanvas gameDimensions={GAME_BOUNDARY_DIMENSIONS} />
 
-      <h4>Connected to:</h4>
+      <ResponsiveCanvas canvasResolution={CANVAS_NATIVE_RESOLUTION} />
+
+      <h4>Players:</h4>
       <ul>
-        {clients.map((c, i) => <li key={i}>{c}</li>)}
-        {isConnected && !clients.length && <li>host</li>}
+        {players.map(({ id, name }, i) => <li key={i}>{name} | {id} {id === selfId && '(you)'}</li>)}
       </ul>
     </>
   );
 };
-
-export default App;

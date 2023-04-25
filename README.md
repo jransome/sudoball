@@ -11,12 +11,17 @@
 - [x] allowing clients to control independent player objects
 - [x] scale canvas to browser size (independent of game)
 - [ ] game setup
-    - [ ] join via url
-    - [ ] allow players to choose name
-    - [ ] allow players to choose team
+    - [x] join via url
+    - [x] allow players to choose name
+    - [x] allow players to choose team
     - [ ] team randomiser
-    - [ ] set max number of goals
-    - [ ] set match time limit
+    - [ ] dynamic game variables
+      - [ ] max number of goals
+      - [ ] match time limit
+      - [ ] fight mode
+      - [ ] move speed
+      - [ ] kick force
+      - [ ] ball bounciness/speed
     - [ ] handling client drop out
     - [ ] handling host drop out
 - [ ] game
@@ -24,11 +29,14 @@
     - [ ] handling client drop out
     - [ ] handling host drop out
     - [ ] spectating?
+    - [ ] send simpler input data structure?
+    - [ ] better initial positioning of players
     - [ ] mechanics
-        - [ ] starting the game
+        - [x] teams
+        - [x] starting the game
         - [x] ability to kick the ball
         - [x] add goals and posts
-        - [ ] goal detection
+        - [x] goal detection
         - [ ] reset positions after goal
         - [ ] player stats - touches, goals, saves?
         - [ ] ending the match on time/goal limit
@@ -41,3 +49,6 @@
         - [ ] meme avatars
         - [ ] sfx on kick/scoring
         - [ ] game summary on match end
+
+### Bugs
+  - [ ] can't use arrow keys/space to type name (or anything else) as these are game controls
