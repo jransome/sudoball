@@ -78,6 +78,6 @@ export const joinGame = async (
   rtc.sendToHost({ type: 'JOINED', payload: { id: peerId, name: playerName, team: Team.Unassigned } });
 
   return {
-    requestTeamChange: (newTeam: Team) => rtc.sendToHost({ type: 'TEAM_CHANGE', payload: newTeam }),
+    changeTeam: (newTeam: Team) => rtc.sendToHost({ type: 'TEAM_CHANGE', payload: newTeam }),
   };
 };

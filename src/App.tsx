@@ -69,8 +69,8 @@ export const App = () => {
           hostInterface?.startGame(players);
         }}
         onTeamChanged={(newTeam: Team) => { 
-          hostInterface && hostInterface.changeHostTeam(newTeam);
-          clientInterface && clientInterface.requestTeamChange(newTeam);
+          const gameInterface = hostInterface || clientInterface;
+          gameInterface?.changeTeam(newTeam);
         }}
       />
 

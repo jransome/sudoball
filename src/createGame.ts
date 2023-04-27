@@ -87,10 +87,10 @@ export const createGame = (
     return newPlayerLineup;
   });
 
-  const changeHostTeam = (newTeam: Team) => changePlayerTeam(hostId, newTeam);
+  const changeTeam = (newTeam: Team) => changePlayerTeam(hostId, newTeam);
 
   return {
     startGame,
-    changeHostTeam,
+    changeTeam,
   };
 };
