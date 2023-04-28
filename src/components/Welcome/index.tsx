@@ -12,11 +12,12 @@ const useStyles = createUseStyles({
     position: 'fixed',
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgb(155, 190, 68)',
+    backgroundColor: '#324376',
+    color: '#E56B6F'
   },
   content: {
     minWidth: '300px',
-    backgroundColor: '#fff',
+    backgroundColor: '#324376',
     borderRadius: '4px',
     padding: '30px',
     display: 'flex',
@@ -30,6 +31,13 @@ const useStyles = createUseStyles({
     alignItems: 'center',
     justifyContent: 'space-around',
   },
+  nameInput: {
+    padding: '12px 20px',
+    fontFamily: 'Bruno Ace',
+    backgroundColor:  '#324376',
+    color: '#E56B6F',
+    borderColor:'#E56B6F'
+  }
 });
 
 type WelcomeProps = {
@@ -50,7 +58,8 @@ export const Welcome = ({ visible, onCreateGame, onJoinGame, invitationHostId }:
       <div className={classes.content}>
         <h1>Sudoball</h1>
 
-        <input
+        <input 
+          className={classes.nameInput}
           id='player-name'
           type='text'
           placeholder='Enter your name'

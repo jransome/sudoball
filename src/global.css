@@ -1,7 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Bruno+Ace&family=Bruno+Ace+SC&display=swap');
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  font-family: 'Bruno Ace', cursive;
+  font-family: 'Bruno Ace SC', cursive;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
