@@ -6,8 +6,8 @@ import { generateReadableId } from './id';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
 import { Welcome } from './components/Welcome';
 import { Lobby } from './components/Lobby';
-import { joinGame } from './joinGame';
-import { createGame } from './createGame';
+import { joinGame } from './client';
+import { createGame } from './host';
 import { Team } from './enums';
 
 const useStyles = createUseStyles({

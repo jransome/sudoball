@@ -1,11 +1,11 @@
 import { Dispatch } from 'react';
-import { PeerId, PlayerInfo, RTCClientMessage } from './types';
-import { GAME_FRAMERATE_HZ } from './config';
-import { Team } from './enums';
+import { PeerId, PlayerInfo, RTCClientMessage } from '../types';
+import { GAME_FRAMERATE_HZ } from '../config';
+import { Team } from '../enums';
 import { RTCHost } from './RTCHost';
-import { CanvasPainter } from './CanvasPainter';
-import { GameEngine } from './game';
-import { getLocalInput } from './input';
+import { CanvasPainter } from '../CanvasPainter';
+import { GameEngine } from '../game';
+import { getLocalInput } from '../input';
 
 export const createGame = (
   hostId: PeerId,
@@ -76,6 +76,11 @@ export const createGame = (
         }),
       };
       CanvasPainter.paintGameState(renderableState);
+    });
+    
+    game.on('goal', (scoringTeam) => {
+      rtc.broadcast({ type: 'GOAL_SCORED', payload: scoringTeam });
+      // paint something
     });
 
     game.start(players);

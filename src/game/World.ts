@@ -19,7 +19,7 @@ export class World extends EventEmitter<WorldEvents> {
   private redGoalRbHandle: number;
   private blueGoalRbHandle: number;
   private ballRb: RigidBody;
-  private playerRbs = new Map<PeerId, RigidBody>();
+  private players = new Map<PeerId, { rb: RigidBody; team: Team; }>();
 
   constructor() {
     super();
@@ -59,7 +59,6 @@ export class World extends EventEmitter<WorldEvents> {
     // ball
     this.ballRb = this.world.createRigidBody(RigidBodyDesc.dynamic()
       .setCcdEnabled(true)
-      .setTranslation(pitchMidpoint.x, pitchMidpoint.y)
       .setAdditionalMass(BALL_MASS)
       .setLinearDamping(BALL_DRAG),
     );
@@ -74,27 +73,44 @@ export class World extends EventEmitter<WorldEvents> {
   }
 
   public addPlayers(players: PlayerInfo[]) {
-    this.playerRbs = new Map(players.map(({ id, team }) => {
-      const playerXPosition = GAME_ENCLOSURE.x * (team === Team.Red ? 0.25 : 0.75);
+    this.players = new Map(players.map(({ id, team }) => {
       const playerRb = this.world.createCollider(
         ColliderDesc.ball(PLAYER_RADIUS)
           .setCollisionGroups(CollisionGroup.Player)
           .setFriction(0),
         this.world.createRigidBody(RigidBodyDesc.dynamic()
-          .setTranslation(playerXPosition, pitchMidpoint.y)
           .setAdditionalMass(PLAYER_MASS)
           .setLinearDamping(PLAYER_DRAG),
         ),
       ).parent()!;
-      return [id, playerRb];
+      return [id, { rb: playerRb, team }];
     }));
   }
 
   public removePlayer(id: PeerId) {
-    const rb = this.playerRbs.get(id);
-    if (!rb) return;
-    this.world.removeRigidBody(rb);
-    this.playerRbs.delete(id);
+    const player = this.players.get(id);
+    if (!player) return;
+    this.world.removeRigidBody(player.rb);
+    this.players.delete(id);
+  }
+
+  public resetPositions() {
+    this.ballRb.setLinvel({ x: 0, y: 0 }, true);
+    this.ballRb.setTranslation(pitchMidpoint, true);
+
+    const safePitchWidth = GAME_ENCLOSURE.y * 0.9;
+    const pitchWidthBuffer = (GAME_ENCLOSURE.y - safePitchWidth) / 2;
+    const allPlayers = Array.from(this.players.values());
+
+    [Team.Red, Team.Blue]
+      .map(t => allPlayers.filter(p => p.team === t))
+      .forEach((teamPlayers) => {
+        const playerSpacingY = safePitchWidth / (teamPlayers.length + 1);
+        teamPlayers.forEach(({ rb, team }, i) => rb.setTranslation({
+          x: GAME_ENCLOSURE.x * (team === Team.Red ? 0.25 : 0.75),
+          y: pitchWidthBuffer + playerSpacingY + i * playerSpacingY,
+        }, true));
+      });
   }
 
   public dispose() {
@@ -102,15 +118,19 @@ export class World extends EventEmitter<WorldEvents> {
     this.world.free();
   }
 
-  public step(inputs: Map<PeerId, Input>): TransmittedGameState {
-    const getPlayerState = Array
-      .from(inputs)
-      .map(([id, input]) => {
-        const playerRb = this.tryGetPlayerRb(id);
-        this.applyPlayerInput(input, playerRb, this.ballRb);
+  public step(inputs: { id: PeerId; input: Input; }[]): TransmittedGameState {
+    const getPlayerStates = inputs
+      .map(({ id, input }) => {
+        const player = this.players.get(id);
+        if (!player) {
+          throw new InputForNonExistentPlayerError('Received input for player that does not exist in game', { id, currentPlayers: this.players });
+        }
+
+        this.applyPlayerInput(input, player.rb, this.ballRb);
+
         return () => ({
           id,
-          position: playerRb.translation(),
+          position: player.rb.translation(),
           isKicking: input.kick,
         });
       });
@@ -134,7 +154,7 @@ export class World extends EventEmitter<WorldEvents> {
 
     return {
       ball: this.ballRb.translation(),
-      players: getPlayerState.map(getState => getState()),
+      players: getPlayerStates.map(getState => getState()),
     };
   }
 
@@ -149,14 +169,6 @@ export class World extends EventEmitter<WorldEvents> {
       const ballDirection = normalise(distanceVector);
       ball.applyImpulse(scale(ballDirection, KICK_FORCE), true);
     }
-  }
-
-  private tryGetPlayerRb(id: PeerId) {
-    const playerRb = this.playerRbs.get(id);
-    if (!playerRb) {
-      throw new InputForNonExistentPlayerError('Received input for player that does not exist in game', { id, currentPlayers: this.playerRbs });
-    }
-    return playerRb;
   }
 }
 

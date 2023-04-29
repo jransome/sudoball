@@ -59,15 +59,18 @@ export type RTCHostMessageType =
   | 'START'
   | 'UPDATE'
   | 'PLAYER_LINEUP_CHANGE'
+  | 'GOAL_SCORED'
 
 export type RTCHostMessage =
   | RTCGameStarted
   | RTCGameUpdate
   | RTCPlayerLineupChanged
+  | RTCGoalScored
 
 export type RTCGameStarted = RTCMessage<'START', PlayerInfo[]>
 export type RTCGameUpdate = RTCMessage<'UPDATE', TransmittedGameState>
 export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', PlayerInfo[]>
+export type RTCGoalScored = RTCMessage<'GOAL_SCORED', Team>
 
 // messages from clients
 export type RTCClientMessageType =

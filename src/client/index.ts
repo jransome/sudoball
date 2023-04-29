@@ -1,10 +1,10 @@
-import { PeerId, PlayerInfo, RTCHostMessage, RenderableGameState, TransmittedGameState } from './types';
-import { Team } from './enums';
-import { generateReadableId } from './id';
+import { PeerId, PlayerInfo, RTCHostMessage, RenderableGameState, TransmittedGameState } from '../types';
+import { Team } from '../enums';
+import { generateReadableId } from '../id';
 import { RTCClient } from './RTCClient';
-import { CanvasPainter } from './CanvasPainter';
-import { getLocalInput } from './input';
-import { INPUT_SEND_RATE_HZ } from './config';
+import { CanvasPainter } from '../CanvasPainter';
+import { getLocalInput } from '../input';
+import { INPUT_SEND_RATE_HZ } from '../config';
 
 const inputSendIntervalMs = 1000 / INPUT_SEND_RATE_HZ;
 
@@ -29,6 +29,7 @@ export const joinGame = async (
   hostId: PeerId,
   playerName: string,
   onPlayerLineupChange: (newLineup: PlayerInfo[]) => void,
+  // onGoalScored: (scoringTeam: Team) => void,
   onGameStart: () => void,
 ) => {
   const peerId = generateReadableId();
@@ -54,6 +55,11 @@ export const joinGame = async (
       onPlayerLineupChange(message.payload);
       return;
     }
+
+    // if (message.type === 'GOAL_SCORED') {
+    //   onGoalScored(message.payload);
+    //   return;
+    // }
 
     if (message.type === 'START') {
       gameInProgress = true;

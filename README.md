@@ -29,19 +29,20 @@
     - [ ] handling client drop out
     - [ ] handling host drop out
     - [ ] spectating?
-    - [ ] send simpler input data structure?
-    - [ ] better initial positioning of players
+    - [x] better initial positioning of players
     - [ ] mechanics
         - [x] teams
         - [x] starting the game
         - [x] ability to kick the ball
         - [x] add goals and posts
         - [x] goal detection
-        - [ ] reset positions after goal
+        - [x] reset positions after goal
         - [ ] player stats - touches, goals, saves?
         - [ ] ending the match on time/goal limit
     - [ ] ui
         - [ ] make it look like a football pitch
+        - [ ] kickoff countdown
+        - [ ] goal announcement
         - [x] kick radius indicator
         - [ ] game clock
         - [ ] goals scored
@@ -52,3 +53,6 @@
 
 ### Bugs
   - [ ] can't use arrow keys/space to type name (or anything else) as these are game controls
+
+### Optimisations
+  - [ ] send simpler input data structure?

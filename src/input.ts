@@ -3,7 +3,7 @@ import { Input } from './types';
 type InputKey = typeof INPUT_KEYS[number]
 const INPUT_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'] as const;
 
-const keyDownStates = {
+const keyDownStates: Record<InputKey, boolean> = {
   ArrowLeft: false,
   ArrowRight: false,
   ArrowUp: false,
@@ -29,4 +29,12 @@ export const getLocalInput = (): Input => ({
     y: (Number(keyDownStates.ArrowUp) * -1) + Number(keyDownStates.ArrowDown),
   },
   kick: keyDownStates.Space,
+});
+
+export const getNullInput = (): Input => ({
+  movement: {
+    x: 0,
+    y: 0,
+  },
+  kick: false,
 });

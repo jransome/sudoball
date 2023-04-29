@@ -1,25 +1,35 @@
-import puppeteer, { Browser } from 'puppeteer';
+import puppeteer, { Browser, KeyInput, Page } from 'puppeteer';
 
 const url = 'http://localhost:5173';
 // const url = 'https://jransome.github.io/sudoball/';
 
+const browserSpacing = { x: 640, y: 540 };
+const browserSize = [650, 600];
 const browsers = [
-  // these position args don't really work properly but it works for now
-  { size: [1200, 800], position: [0, 0, 0] }, // for some reason a 3rd number forces it to open on the second monitor, but only when you're on that screen
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
-  { size: [400, 300], position: [0, 0] },
+  { size: browserSize, position: [browserSpacing.x * 0, -100] },
+  { size: browserSize, position: [browserSpacing.x * 1, -100] },
+  { size: browserSize, position: [browserSpacing.x * 2, -100] },
+
+  { size: browserSize, position: [browserSpacing.x * 0, browserSpacing.y - 50] },
+  { size: browserSize, position: [browserSpacing.x * 1, browserSpacing.y - 50] },
+  { size: browserSize, position: [browserSpacing.x * 2, browserSpacing.y - 50] },
+];
+
+const movementInputKeys: KeyInput[] = [
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
 ];
 
 const waitForMs = (ms: number) => new Promise(res => setTimeout(res, ms));
+const getRandomInt = (max: number) => Math.floor(Math.random() * max);
+const pressRandomMovementKey = (page: Page, durationMs: number) => pressInput(page, movementInputKeys[getRandomInt(movementInputKeys.length)], durationMs);
+const pressInput = async (page: Page, keyName: KeyInput, durationMs: number) => {
+  await page.keyboard.down(keyName);
+  await waitForMs(durationMs);
+  await page.keyboard.up(keyName);
+};
 
 describe('Connecting multiple players', () => {
   let browserInstances: Browser[] = [];
@@ -40,33 +50,59 @@ describe('Connecting multiple players', () => {
       })),
     );
 
-    const [host, ...clients] = await Promise.all(browserInstances.map(async (b) => {
-      const page = await b.newPage();
-      await page.goto(url);
-      return page;
-    }));
+    const [host, ...clients] = await Promise.all(browserInstances.map(async b => b.newPage()));
 
+    await host.goto(url);
+    await host.focus('#player-name');
+    await host.keyboard.type('dohkerm');
     await host.click('#create-game');
-    const hostId = await host.$eval('#host-id', input => input.getAttribute('value')) as string;
-    await waitForMs(2000);
+    const joinLink: string = await host.$('#invite-link')
+      .then(el => el!.getProperty('innerText'))
+      .then(el => el!.jsonValue() as unknown as string);
 
-    await Promise.all(clients.map(async (client) => {
-      await client.focus('#host-id');
-      await client.keyboard.type(hostId);
+    await Promise.all(clients.map(async (client, i) => {
+      await client.goto(joinLink);
+      await client.focus('#player-name');
+      await client.keyboard.type('dohkerm' + i);
       await client.click('#join-game');
     }));
 
-    await waitForMs(15000);
+    await Promise.all([host, ...clients].map(async (player, i) => {
+      await Promise.race([
+        player.waitForSelector('#join-red'),
+        player.waitForSelector('#join-blue'),
+      ]);
+      await player.click(i % 2 === 0 ? '#join-red' : '#join-blue');
+    }));
 
-    await [host, ...clients].reduce((acc, player) => {
-      acc = acc.then(async () => {
-        await player.keyboard.down('ArrowRight');
-        await waitForMs(1000);
-        await player.keyboard.up('ArrowRight');
-      });
-      return acc;
-    }, Promise.resolve());
-    
-    await waitForMs(10000);
+    await host.click('#start-game');
+    await waitForMs(3000); // wait for kickoff countdown
+
+    await Promise.all([host, ...clients].map(async (player, i) => {
+      const isRedTeam = i % 2 === 0;
+
+      let lastKick = Promise.resolve();
+      const kickInterval = setInterval(() => {
+        lastKick = pressInput(player, 'Space', 250);
+      }, 500);
+
+      if (isRedTeam) {
+        await pressInput(player, 'ArrowUp', 1000); // move red out the way so blue can score
+      } else {
+        await pressInput(player, 'ArrowLeft', 2000);
+      }
+      
+      await Promise.all([
+        pressRandomMovementKey(player, getRandomInt(15000)),
+        pressRandomMovementKey(player, getRandomInt(15000)),
+        pressRandomMovementKey(player, getRandomInt(15000)),
+        pressRandomMovementKey(player, getRandomInt(15000)),
+        pressRandomMovementKey(player, getRandomInt(15000)),
+        pressRandomMovementKey(player, getRandomInt(15000)),
+      ]);
+
+      clearInterval(kickInterval);
+      await lastKick;
+    }));
   });
 });
