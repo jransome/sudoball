@@ -37,12 +37,13 @@
         - [x] add goals and posts
         - [x] goal detection
         - [x] reset positions after goal
-        - [ ] player stats - touches, goals, saves?
         - [ ] ending the match on time/goal limit
+        - [ ] centre circle thing
     - [ ] ui
         - [ ] make it look like a football pitch
         - [ ] kickoff countdown
         - [ ] goal announcement
+        - [ ] player stats - touches, goals, saves?
         - [x] kick radius indicator
         - [ ] game clock
         - [ ] goals scored

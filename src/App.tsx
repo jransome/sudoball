@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import { PeerId, PlayerInfo } from './types';
 import { CANVAS_NATIVE_RESOLUTION } from './config';
 import { generateReadableId } from './id';
-import { ResponsiveCanvas } from './ResponsiveCanvas';
+import { ResponsiveCanvas } from './components/ResponsiveCanvas';
 import { Welcome } from './components/Welcome';
 import { Lobby } from './components/Lobby';
 import { joinGame } from './client';
@@ -23,7 +23,7 @@ const useStyles = createUseStyles({
   },
 });
 
-export enum View {
+enum View {
   Welcome,
   Lobby,
   Game,

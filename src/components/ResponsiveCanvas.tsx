@@ -1,8 +1,8 @@
 import { useRef, useEffect } from 'react';
 import { createUseStyles } from 'react-jss';
-import { CanvasPainter } from './CanvasPainter';
-import { CANVAS_SHARPNESS_FACTOR } from './config';
-import { Vector2 } from './types';
+import { CanvasPainter } from '../CanvasPainter';
+import { CANVAS_SHARPNESS_FACTOR } from '../config';
+import { Vector2 } from '../types';
 
 const useStyles = createUseStyles({
   canvas: {
@@ -13,10 +13,10 @@ const useStyles = createUseStyles({
 
 type Props = {
   canvasResolution: Vector2;
-  maxWidthPx?: number;
+  maxWidthPx: number;
 }
 
-export const ResponsiveCanvas = ({ canvasResolution, maxWidthPx = 1500 }: Props) => {
+export const ResponsiveCanvas = ({ canvasResolution, maxWidthPx }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const classes = useStyles();
 
@@ -49,7 +49,7 @@ export const ResponsiveCanvas = ({ canvasResolution, maxWidthPx = 1500 }: Props)
     onWindowResize();
     window.addEventListener('resize', onWindowResize);
     return () => window.removeEventListener('resize', onWindowResize);
-  }, []);
+  }, [canvasResolution.x, canvasResolution.y, maxWidthPx]);
 
   return (<canvas ref={canvasRef} className={classes.canvas} />);
 };
