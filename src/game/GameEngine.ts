@@ -35,7 +35,9 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
   }
 
   public start(players: PlayerInfo[]) {
-    this.lastKnownClientInputs = new Map(players.map(p => [p.id, { input: getNullInput(), timestamp: performance.now() }]));
+    this.lastKnownClientInputs = new Map(players
+      .filter(p => p.id !== this.localPlayerId)
+      .map(p => [p.id, { input: getNullInput(), timestamp: performance.now() }]));
     this.world.addPlayers(players);
     this.kickOff();
 

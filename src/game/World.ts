@@ -3,7 +3,7 @@ import { PlayerInfo, TransmittedGameState, PeerId, Input } from '../types';
 import { PLAYER_RADIUS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS, GAME_ENCLOSURE } from '../config';
 import { Team } from '../enums';
 import { EventEmitter } from '../Events';
-import { scale, subtract, sqrMagnitude, normalise, isZero } from '../vector2Utils';
+import { scale, subtract, sqrMagnitude, normalise } from '../vector2Utils';
 import { boundsHalfSpaces, goalSensorPositions, goalSensorSize, lowerPitchVertices, pitchMidpoint, postPositions, upperPitchVertices } from './pitch';
 import { CollisionGroup } from './CollisionGroups';
 
@@ -131,7 +131,7 @@ export class World extends EventEmitter<WorldEvents> {
         return () => ({
           id,
           position: player.rb.translation(),
-          isKicking: input.kick,
+          isKicking: input[2],
         });
       });
 
@@ -159,11 +159,13 @@ export class World extends EventEmitter<WorldEvents> {
   }
 
   private applyPlayerInput(input: Input, player: RigidBody, ball: RigidBody) {
-    if (!isZero(input.movement)) {
-      player.applyImpulse(scale(normalise(input.movement), MOVE_FORCE), true);
+    const [x, y, isKicking] = input;
+
+    if (!(x === 0 && y === 0)) { // ignore if no movement input
+      player.applyImpulse(scale(normalise({ x, y }), MOVE_FORCE), true);
     }
 
-    if (input.kick) {
+    if (isKicking) {
       const distanceVector = subtract(ball.translation(), player.translation());
       if (sqrMagnitude(distanceVector) > kickBallRadiiSumSquared) return;
       const ballDirection = normalise(distanceVector);

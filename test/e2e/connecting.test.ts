@@ -65,10 +65,11 @@ describe('Connecting multiple players', () => {
       await client.focus('#player-name');
       await client.keyboard.type('dohkerm' + i);
       await client.click('#join-game');
+      await waitForMs(500);
     }));
 
     await Promise.all([host, ...clients].map(async (player, i) => {
-      await Promise.race([
+      await Promise.all([
         player.waitForSelector('#join-red'),
         player.waitForSelector('#join-blue'),
       ]);

@@ -6,7 +6,7 @@ export type Vector2 = {
   x: number;
   y: number;
 }
-// export type Polygon = Vector2[];
+
 export type Circle = {
   position: Vector2;
   radius: number;
@@ -38,16 +38,11 @@ export type PlayerInfo = {
   team: Team;
 }
 
-export type Input = {
-  movement: Vector2;
-  kick: boolean;
-}
-
-export interface TransmittedInput extends Input {
-  frameIndex: number;
-}
-
-export type PlayerInputs = Record<PeerId, Input>
+export type Input = [
+  number, // x dimension: -1 | 0 | 1
+  number, // y dimension: -1 | 0 | 1
+  boolean, // isKicking
+]
 
 type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object | number> = {
   type: T;

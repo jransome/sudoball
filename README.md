@@ -55,4 +55,5 @@
   - [ ] can't use arrow keys/space to type name (or anything else) as these are game controls
 
 ### Optimisations
-  - [ ] send simpler input data structure?
+  - [x] send simpler input data structure
+  - [ ] compress game state data structure + truncate numbers

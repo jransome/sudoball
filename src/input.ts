@@ -23,18 +23,14 @@ document.addEventListener('keyup', (event) => {
   keyDownStates[event.code as InputKey] = false;
 });
 
-export const getLocalInput = (): Input => ({
-  movement: {
-    x: (Number(keyDownStates.ArrowLeft) * -1) + Number(keyDownStates.ArrowRight),
-    y: (Number(keyDownStates.ArrowUp) * -1) + Number(keyDownStates.ArrowDown),
-  },
-  kick: keyDownStates.Space,
-});
+export const getLocalInput = (): Input => [
+  (Number(keyDownStates.ArrowLeft) * -1) + Number(keyDownStates.ArrowRight),
+  (Number(keyDownStates.ArrowUp) * -1) + Number(keyDownStates.ArrowDown),
+  keyDownStates.Space,
+];
 
-export const getNullInput = (): Input => ({
-  movement: {
-    x: 0,
-    y: 0,
-  },
-  kick: false,
-});
+export const getNullInput = (): Input => [
+  0,
+  0,
+  false,
+];
