@@ -42,12 +42,12 @@
         - [ ] centre circle thing
     - [ ] ui
         - [ ] make it look like a football pitch
-        - [ ] kickoff countdown
-        - [ ] goal announcement
+        - [x] kickoff countdown
+        - [x] goal announcement
         - [ ] player stats - touches, goals, saves?
         - [x] kick radius indicator
         - [ ] game clock
-        - [ ] goals scored
+        - [x] goals scored
         - [x] render player names under avatar
         - [ ] meme avatars
         - [ ] sfx on kick/scoring

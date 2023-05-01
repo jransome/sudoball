@@ -52,6 +52,7 @@ type KickoffCountdownAnnouncement = {
 type GoalAnnouncement = {
   type: 'GOAL';
   scoringTeam: Team;
+  scores: Record<Team, number>;
 }
 
 type MatchOverAnnouncement = {

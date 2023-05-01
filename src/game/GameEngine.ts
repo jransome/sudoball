@@ -13,7 +13,7 @@ type Options = {
 
 type GameEngineEvents = {
   update: (gameState: TransmittedGameState) => void;
-  goal: (scoringTeam: Team) => void;
+  goal: (scoringTeam: Team, scores: Record<Team, number>) => void;
   kickoff: (countdownSeconds: number) => void;
 }
 
@@ -25,6 +25,7 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
   private lastKnownClientInputs = new Map<PeerId, { input: Input; timestamp: number; }>();
   private getLocalInput: () => Input;
   private world: World;
+  private scores: Record<Team, number> = { [Team.Red]: 0, [Team.Blue]: 0, [Team.None]: 0 };
 
   constructor({ localPlayerId, frameRateHz, pollLocalInput }: Options) {
     super();
@@ -129,6 +130,7 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
 
     this.playSuspended = true;
     setTimeout(() => this.kickoff(), 3000);
-    this.emit('goal', scoringTeam);
+    this.scores[scoringTeam]++;
+    this.emit('goal', scoringTeam, this.scores);
   }
 }

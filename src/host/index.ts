@@ -72,10 +72,11 @@ export const createGame = ({ selfId, onPlayerLineupChange, onGameAnnouncement }:
       rtc.broadcast({ type: 'GAME_ANNOUNCEMENT', payload: kickoffAnnouncement });
     });
 
-    game.on('goal', (scoringTeam) => {
+    game.on('goal', (scoringTeam, scores) => {
       const goalAnnouncement: GameAnnouncement = {
         type: 'GOAL',
         scoringTeam,
+        scores,
       };
       onGameAnnouncement(goalAnnouncement);
       rtc.broadcast({ type: 'GAME_ANNOUNCEMENT', payload: goalAnnouncement });

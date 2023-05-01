@@ -35,10 +35,12 @@ export const App = () => {
   const [hostId, setHostId] = useState<PeerId>('');
   const [activeView, setActiveView] = useState(View.Welcome);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
-  const [gameAnnouncement, setGameAnnouncement] = useState<GameAnnouncement>(null!);
 
   const [hostInterface, setHostInterface] = useState<ReturnType<typeof createGame>>();
   const [clientInterface, setClientInterface] = useState<Awaited<ReturnType<typeof joinGame>>>();
+
+  // TODO: App doesn't need to know about this. Pass client/host into renderer instead?
+  const [gameAnnouncement, setGameAnnouncement] = useState<GameAnnouncement>(null!);
 
   return (
     <>
