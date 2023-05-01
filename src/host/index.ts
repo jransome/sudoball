@@ -7,21 +7,22 @@ import { CanvasPainter } from '../CanvasPainter';
 import { GameEngine } from '../game';
 import { getLocalInput } from '../input';
 
-export const createGame = (
-  hostId: PeerId,
-  hostPlayerName: string,
-  setPlayers: Dispatch<React.SetStateAction<PlayerInfo[]>>,
-) => {
-  const rtc = new RTCHost(hostId);
+type Params = {
+  selfId: PeerId;
+  onPlayerLineupChange: Dispatch<React.SetStateAction<PlayerInfo[]>>;
+  onGameAnnouncement: (message: string) => void;
+}
+
+export const createGame = ({ selfId, onPlayerLineupChange, onGameAnnouncement }: Params) => {
+  const rtc = new RTCHost(selfId);
   const game = new GameEngine({
-    localPlayerId: hostId,
+    localPlayerId: selfId,
     frameRateHz: GAME_FRAMERATE_HZ,
     pollLocalInput: getLocalInput,
   });
 
-  setPlayers([{ id: hostId, name: hostPlayerName, team: Team.Unassigned }]);
   rtc.on('clientDisconnected', (id) => {
-    setPlayers((prev) => {
+    onPlayerLineupChange((prev) => {
       const newPlayerLineup = prev.filter(p => p.id !== id);
       rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: newPlayerLineup });
       return newPlayerLineup;
@@ -35,7 +36,7 @@ export const createGame = (
     }
 
     if (message.type === 'JOINED') {
-      setPlayers((prev) => {
+      onPlayerLineupChange((prev) => {
         const newPlayerLineup = prev.concat({ id: clientId, name: message.payload.name, team: Team.Unassigned });
         rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: newPlayerLineup });
         return newPlayerLineup;
@@ -71,28 +72,30 @@ export const createGame = (
           return {
             ...p,
             ...playerInfo!,
-            isLocalPlayer: p.id === hostId,
+            isLocalPlayer: p.id === selfId,
           };
         }),
       };
       CanvasPainter.paintGameState(renderableState);
     });
-    
+
     game.on('goal', (scoringTeam) => {
-      rtc.broadcast({ type: 'GOAL_SCORED', payload: scoringTeam });
-      // paint something
+      // TODO: only send data, not concerned with message presentation here
+      const announcementMessage = `${Team[scoringTeam]} Team Scored!`;
+      onGameAnnouncement(announcementMessage);
+      rtc.broadcast({ type: 'GAME_ANNOUNCEMENT', payload: announcementMessage });
     });
 
     game.start(players);
   };
 
-  const changePlayerTeam = (id: PeerId, newTeam: Team) => setPlayers((prev) => {
+  const changePlayerTeam = (id: PeerId, newTeam: Team) => onPlayerLineupChange((prev) => {
     const newPlayerLineup = prev.map(p => p.id === id ? { ...p, team: newTeam } : p);
     rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: newPlayerLineup });
     return newPlayerLineup;
   });
 
-  const changeTeam = (newTeam: Team) => changePlayerTeam(hostId, newTeam);
+  const changeTeam = (newTeam: Team) => changePlayerTeam(selfId, newTeam);
 
   return {
     startGame,

@@ -44,7 +44,7 @@ export type Input = [
   boolean, // isKicking
 ]
 
-type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object | number> = {
+type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object | string | number> = {
   type: T;
   payload: P;
 }
@@ -54,18 +54,18 @@ export type RTCHostMessageType =
   | 'START'
   | 'UPDATE'
   | 'PLAYER_LINEUP_CHANGE'
-  | 'GOAL_SCORED'
+  | 'GAME_ANNOUNCEMENT'
 
 export type RTCHostMessage =
   | RTCGameStarted
   | RTCGameUpdate
   | RTCPlayerLineupChanged
-  | RTCGoalScored
+  | RTCGameAnnouncement
 
 export type RTCGameStarted = RTCMessage<'START', PlayerInfo[]>
 export type RTCGameUpdate = RTCMessage<'UPDATE', TransmittedGameState>
 export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', PlayerInfo[]>
-export type RTCGoalScored = RTCMessage<'GOAL_SCORED', Team>
+export type RTCGameAnnouncement = RTCMessage<'GAME_ANNOUNCEMENT', string>
 
 // messages from clients
 export type RTCClientMessageType =

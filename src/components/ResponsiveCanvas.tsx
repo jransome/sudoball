@@ -1,8 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { createUseStyles } from 'react-jss';
 import { CanvasPainter } from '../CanvasPainter';
-import { CANVAS_SHARPNESS_FACTOR } from '../config';
-import { Vector2 } from '../types';
+import { CANVAS_MAX_ON_SCREEN_WIDTH_PX, CANVAS_NATIVE_RESOLUTION, CANVAS_SHARPNESS_FACTOR } from '../config';
 
 const useStyles = createUseStyles({
   canvas: {
@@ -11,17 +10,12 @@ const useStyles = createUseStyles({
   },
 });
 
-type Props = {
-  canvasResolution: Vector2;
-  maxWidthPx: number;
-}
-
-export const ResponsiveCanvas = ({ canvasResolution, maxWidthPx }: Props) => {
+export const ResponsiveCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const classes = useStyles();
 
   useEffect(() => {
-    const aspectRatio = canvasResolution.x / canvasResolution.y;
+    const aspectRatio = CANVAS_NATIVE_RESOLUTION.x / CANVAS_NATIVE_RESOLUTION.y;
     const canvas = canvasRef.current!;
     const context = canvas.getContext('2d', { alpha: false })!;
     CanvasPainter.setContext(context);
@@ -37,19 +31,19 @@ export const ResponsiveCanvas = ({ canvasResolution, maxWidthPx }: Props) => {
      * Therefore we scale() the canvas to compensate. Leaving the width and scale
      * as-is would mean the game renders correctly, but at a low resolution. 
      */
-    canvas.width = canvasResolution.x * CANVAS_SHARPNESS_FACTOR;
-    canvas.height = canvasResolution.y * CANVAS_SHARPNESS_FACTOR;
+    canvas.width = CANVAS_NATIVE_RESOLUTION.x * CANVAS_SHARPNESS_FACTOR;
+    canvas.height = CANVAS_NATIVE_RESOLUTION.y * CANVAS_SHARPNESS_FACTOR;
     context.scale(CANVAS_SHARPNESS_FACTOR, CANVAS_SHARPNESS_FACTOR);
 
     const onWindowResize = () => {
-      const newWidth = Math.min(window.innerWidth, maxWidthPx);
+      const newWidth = Math.min(window.innerWidth, CANVAS_MAX_ON_SCREEN_WIDTH_PX);
       canvas.style.width = `${newWidth}px`;
       canvas.style.height = `${newWidth / aspectRatio}px`;
     };
     onWindowResize();
     window.addEventListener('resize', onWindowResize);
     return () => window.removeEventListener('resize', onWindowResize);
-  }, [canvasResolution.x, canvasResolution.y, maxWidthPx]);
+  }, []);
 
   return (<canvas ref={canvasRef} className={classes.canvas} />);
 };

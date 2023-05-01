@@ -25,13 +25,15 @@ const stateRendererFactory = (playerLookup: Map<PeerId, PlayerInfo>, selfId: Pee
     }),
   });
 
-export const joinGame = async (
-  hostId: PeerId,
-  playerName: string,
-  onPlayerLineupChange: (newLineup: PlayerInfo[]) => void,
-  // onGoalScored: (scoringTeam: Team) => void,
-  onGameStart: () => void,
-) => {
+type Params = {
+  hostId: PeerId;
+  playerName: string;
+  onPlayerLineupChange: (newLineup: PlayerInfo[]) => void;
+  onGameAnnouncement: (message: string) => void;
+  onGameStart: () => void;
+}
+
+export const joinGame = async ({ hostId, playerName, onPlayerLineupChange, onGameAnnouncement, onGameStart }: Params) => {
   const peerId = generateReadableId();
   const rtc = new RTCClient(peerId);
 
@@ -56,10 +58,10 @@ export const joinGame = async (
       return;
     }
 
-    // if (message.type === 'GOAL_SCORED') {
-    //   onGoalScored(message.payload);
-    //   return;
-    // }
+    if (message.type === 'GAME_ANNOUNCEMENT') {
+      onGameAnnouncement(message.payload);
+      return;
+    }
 
     if (message.type === 'START') {
       gameInProgress = true;

@@ -14,6 +14,7 @@
     - [x] join via url
     - [x] allow players to choose name
     - [x] allow players to choose team
+    - [ ] allow creation of subsequent game without refreshing app
     - [ ] team randomiser
     - [ ] dynamic game variables
       - [ ] max number of goals
@@ -58,3 +59,5 @@
 ### Optimisations
   - [x] send simpler input data structure
   - [ ] compress game state data structure + truncate numbers
+  - [ ] try running requestanimationframe inside canvas component and passing game state it as a ref?
+  - [ ] unify player lineup data structure/remove PlayerInfo[]
