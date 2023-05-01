@@ -1,9 +1,10 @@
 import { BALL_RADIUS, KICK_RADIUS, PIXELS_PER_METER, PLAYER_RADIUS, POST_RADIUS } from './config';
 import { Team } from './enums';
 import { lowerPitchVertices, postPositions, upperPitchVertices } from './game/pitch';
-import { RenderableGameState, Circle, Vector2 } from './types';
+import { RenderableGameState, Circle, Vector2, PlayerInfo, TransmittedGameState, PeerId } from './types';
 
 let ctx: CanvasRenderingContext2D = null!;
+let playerLookup: Map<string,PlayerInfo> = new Map();
 const TEAM_COLOURS: Record<Team, string> = {
   [Team.Unassigned]: 'grey',
   [Team.Red]: 'coral',
@@ -12,6 +13,10 @@ const TEAM_COLOURS: Record<Team, string> = {
 
 const setContext = (context: CanvasRenderingContext2D) => {
   ctx = context;
+};
+
+const setPlayerLookup = (lookup: Map<string,PlayerInfo>) => {
+  playerLookup = lookup;
 };
 
 const paintLine = (ctx: CanvasRenderingContext2D, strokeColour: string, vertices: ReadonlyArray<readonly [number, number]>, pixelsPerMeter: number) => {
@@ -78,16 +83,33 @@ const paint = (gameState: RenderableGameState) => {
   paintCircle(ctx, 'white', 'white', { position: gameState.ballPosition, radius: BALL_RADIUS }, PIXELS_PER_METER);
 };
 
-const paintGameState = (gameState: RenderableGameState) => {
+const paintGameState = (gameState: TransmittedGameState, localPlayerId: PeerId) => {
   if (!ctx) {
     console.error('tried to paint but no canvas context set!');
     return;
   }
 
-  window.requestAnimationFrame(() => paint(gameState));
+  const renderableState = {
+    ballPosition: gameState.ball,
+    players: gameState.players.map((p) => {
+      const playerInfo = playerLookup.get(p.id);
+      if (!playerInfo) {
+        console.error('Unrecognised player id', p);
+      }
+
+      return {
+        ...p,
+        ...playerInfo!,
+        isLocalPlayer: p.id === localPlayerId,
+      };
+    }),
+  };
+
+  window.requestAnimationFrame(() => paint(renderableState));
 };
 
 export const CanvasPainter = {
   setContext,
+  setPlayerLookup,
   paintGameState,
 };

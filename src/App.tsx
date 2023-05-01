@@ -48,8 +48,8 @@ export const App = () => {
         onCreateGame={(playerName) => {
           setPlayers([{ id: selfId, name: playerName, team: Team.Unassigned }]);
 
-          const host = createGame({ 
-            selfId, 
+          const host = createGame({
+            selfId,
             onPlayerLineupChange: setPlayers,
             onGameAnnouncement: setGameAnnouncement,
           });
@@ -59,6 +59,7 @@ export const App = () => {
         }}
         onJoinGame={async (hostId, playerName) => {
           const client = await joinGame({
+            selfId,
             hostId,
             playerName,
             onPlayerLineupChange: setPlayers,

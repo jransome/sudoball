@@ -56,27 +56,11 @@ export const createGame = ({ selfId, onPlayerLineupChange, onGameAnnouncement }:
 
   const startGame = (players: PlayerInfo[]) => {
     rtc.broadcast({ type: 'START', payload: players });
-
-    const playerLookup = new Map(players.map(p => [p.id, p])); // maybe lives in the renderer
+    CanvasPainter.setPlayerLookup(new Map(players.map(p => [p.id, p])));
 
     game.on('update', (newState) => {
       rtc.broadcast({ type: 'UPDATE', payload: newState });
-      const renderableState = {
-        ballPosition: newState.ball,
-        players: newState.players.map((p) => {
-          const playerInfo = playerLookup.get(p.id);
-          if (!playerInfo) {
-            console.error('Unrecognised player id', p);
-          }
-
-          return {
-            ...p,
-            ...playerInfo!,
-            isLocalPlayer: p.id === selfId,
-          };
-        }),
-      };
-      CanvasPainter.paintGameState(renderableState);
+      CanvasPainter.paintGameState(newState, selfId);
     });
 
     game.on('goal', (scoringTeam) => {

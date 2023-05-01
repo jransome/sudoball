@@ -1,6 +1,5 @@
-import { PeerId, PlayerInfo, RTCHostMessage, RenderableGameState, TransmittedGameState } from '../types';
+import { PeerId, PlayerInfo, RTCHostMessage } from '../types';
 import { Team } from '../enums';
-import { generateReadableId } from '../id';
 import { RTCClient } from './RTCClient';
 import { CanvasPainter } from '../CanvasPainter';
 import { getLocalInput } from '../input';
@@ -8,24 +7,8 @@ import { INPUT_SEND_RATE_HZ } from '../config';
 
 const inputSendIntervalMs = 1000 / INPUT_SEND_RATE_HZ;
 
-const stateRendererFactory = (playerLookup: Map<PeerId, PlayerInfo>, selfId: PeerId) =>
-  (gameState: TransmittedGameState): RenderableGameState => ({
-    ballPosition: gameState.ball,
-    players: gameState.players.map((p) => {
-      const playerInfo = playerLookup.get(p.id);
-      if (!playerInfo) {
-        console.error('Unrecognised player id', p);
-      }
-
-      return {
-        ...p,
-        ...playerInfo!,
-        isLocalPlayer: p.id === selfId,
-      };
-    }),
-  });
-
 type Params = {
+  selfId: PeerId;
   hostId: PeerId;
   playerName: string;
   onPlayerLineupChange: (newLineup: PlayerInfo[]) => void;
@@ -33,13 +16,11 @@ type Params = {
   onGameStart: () => void;
 }
 
-export const joinGame = async ({ hostId, playerName, onPlayerLineupChange, onGameAnnouncement, onGameStart }: Params) => {
-  const peerId = generateReadableId();
-  const rtc = new RTCClient(peerId);
+export const joinGame = async ({ selfId, hostId, playerName, onPlayerLineupChange, onGameAnnouncement, onGameStart }: Params) => {
+  const rtc = new RTCClient(selfId);
 
   let gameInProgress = false;
-  let stateToRender: (gameState: TransmittedGameState) => RenderableGameState = null!;
-  console.log('me:', peerId);
+  console.log('me:', selfId);
 
   const sendInput = () => {
     if (!gameInProgress) return;
@@ -49,7 +30,7 @@ export const joinGame = async ({ hostId, playerName, onPlayerLineupChange, onGam
 
   rtc.on('hostMessage', (message: RTCHostMessage) => {
     if (message.type === 'UPDATE') {
-      CanvasPainter.paintGameState(stateToRender(message.payload));
+      CanvasPainter.paintGameState(message.payload, selfId);
       return;
     }
 
@@ -65,7 +46,7 @@ export const joinGame = async ({ hostId, playerName, onPlayerLineupChange, onGam
 
     if (message.type === 'START') {
       gameInProgress = true;
-      stateToRender = stateRendererFactory(new Map(message.payload.map(p => [p.id, p])), peerId);
+      CanvasPainter.setPlayerLookup(new Map(message.payload.map(p => [p.id, p])));
       onPlayerLineupChange(message.payload);
       onGameStart();
       sendInput();
@@ -83,7 +64,7 @@ export const joinGame = async ({ hostId, playerName, onPlayerLineupChange, onGam
 
   await rtc.connectToHost(hostId);
 
-  rtc.sendToHost({ type: 'JOINED', payload: { id: peerId, name: playerName, team: Team.Unassigned } });
+  rtc.sendToHost({ type: 'JOINED', payload: { id: selfId, name: playerName, team: Team.Unassigned } });
 
   return {
     changeTeam: (newTeam: Team) => rtc.sendToHost({ type: 'TEAM_CHANGE', payload: newTeam }),

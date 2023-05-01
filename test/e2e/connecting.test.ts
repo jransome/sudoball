@@ -88,7 +88,7 @@ describe('Connecting multiple players', () => {
       }, 500);
 
       if (isRedTeam) {
-        await pressInput(player, 'ArrowUp', 1000); // move red out the way so blue can score
+        await pressInput(player, 'ArrowUp', 2000); // move red out the way so blue can score
       } else {
         await pressInput(player, 'ArrowLeft', 2000);
       }
