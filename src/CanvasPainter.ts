@@ -1,15 +1,9 @@
-import { BALL_RADIUS, KICK_RADIUS, PIXELS_PER_METER, PLAYER_RADIUS, POST_RADIUS } from './config';
-import { Team } from './enums';
+import { BALL_RADIUS, KICK_RADIUS, PIXELS_PER_METER, PLAYER_RADIUS, POST_RADIUS, TEAM_COLOURS } from './config';
 import { lowerPitchVertices, postPositions, upperPitchVertices } from './game/pitch';
 import { RenderableGameState, Circle, Vector2, PlayerInfo, TransmittedGameState, PeerId } from './types';
 
 let ctx: CanvasRenderingContext2D = null!;
 let playerLookup: Map<string,PlayerInfo> = new Map();
-const TEAM_COLOURS: Record<Team, string> = {
-  [Team.Unassigned]: 'grey',
-  [Team.Red]: 'coral',
-  [Team.Blue]: 'skyblue',
-};
 
 const setContext = (context: CanvasRenderingContext2D) => {
   ctx = context;

@@ -14,6 +14,7 @@ type Options = {
 type GameEngineEvents = {
   update: (gameState: TransmittedGameState) => void;
   goal: (scoringTeam: Team) => void;
+  kickoff: (countdownSeconds: number) => void;
 }
 
 export class GameEngine extends EventEmitter<GameEngineEvents>  {
@@ -39,7 +40,7 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
       .filter(p => p.id !== this.localPlayerId)
       .map(p => [p.id, { input: getNullInput(), timestamp: performance.now() }]));
     this.world.addPlayers(players);
-    this.kickOff();
+    this.kickoff();
 
     const gameTick = () => {
       if (!this.isTicking) return;
@@ -113,20 +114,21 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
     ].map(id => ({ id, input: getNullInput() }));
   }
 
-  private kickOff(countdownMs = 3000) {
+  private kickoff(countdownSeconds = 3) {
     this.playSuspended = true;
     this.world.resetPositions();
 
     setTimeout(() => {
       this.playSuspended = false;
-    }, countdownMs);
+    }, countdownSeconds * 1000);
+    this.emit('kickoff', countdownSeconds);
   }
 
   private onGoal(scoringTeam: Team) {
     if (this.playSuspended) return;
 
-    this.emit('goal', scoringTeam);
     this.playSuspended = true;
-    setTimeout(() => this.kickOff(), 3000);
+    setTimeout(() => this.kickoff(), 3000);
+    this.emit('goal', scoringTeam);
   }
 }

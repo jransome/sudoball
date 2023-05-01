@@ -23,7 +23,7 @@ export const TeamChooser = ({ players, onSelfTeamChange }: Props) => {
       <div style={{ flex: 1 }}>
         <h3>Unassigned</h3>
         <ul>
-          {players.filter(p => p.team === Team.Unassigned).map(p => (
+          {players.filter(p => p.team === Team.None).map(p => (
             <li key={p.id}>{p.name}</li>
           ))}
         </ul>

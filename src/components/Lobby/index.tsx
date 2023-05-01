@@ -46,7 +46,7 @@ export const Lobby = ({ visible, selfId, hostId, players, onStartGame, onTeamCha
 
   if (!visible) return null;
 
-  const someUnassigned = players.some(p => p.team === Team.Unassigned);
+  const someUnassigned = players.some(p => p.team === Team.None);
   const onCopyClick = () => {
     navigator.clipboard.writeText(inviteLink);
     setIsCopied(true);

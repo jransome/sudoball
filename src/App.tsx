@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { PeerId, PlayerInfo } from './types';
+import { GameAnnouncement, PeerId, PlayerInfo } from './types';
 import { generateReadableId } from './id';
 import { Welcome } from './components/Welcome';
 import { Lobby } from './components/Lobby';
@@ -35,7 +35,7 @@ export const App = () => {
   const [hostId, setHostId] = useState<PeerId>('');
   const [activeView, setActiveView] = useState(View.Welcome);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
-  const [gameAnnouncement, setGameAnnouncement] = useState('');
+  const [gameAnnouncement, setGameAnnouncement] = useState<GameAnnouncement>(null!);
 
   const [hostInterface, setHostInterface] = useState<ReturnType<typeof createGame>>();
   const [clientInterface, setClientInterface] = useState<Awaited<ReturnType<typeof joinGame>>>();
@@ -46,7 +46,7 @@ export const App = () => {
         visible={activeView === View.Welcome}
         invitationHostId={new URLSearchParams(document.location.search).get('hostId') || ''}
         onCreateGame={(playerName) => {
-          setPlayers([{ id: selfId, name: playerName, team: Team.Unassigned }]);
+          setPlayers([{ id: selfId, name: playerName, team: Team.None }]);
 
           const host = createGame({
             selfId,
@@ -93,7 +93,7 @@ export const App = () => {
             <h4>Sudoball</h4>
           </div>
 
-          <GameRenderer announcementMessage={gameAnnouncement} />
+          <GameRenderer announcement={gameAnnouncement} />
 
           <h4>Players:</h4>
           <ul>

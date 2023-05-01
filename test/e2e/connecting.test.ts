@@ -65,7 +65,6 @@ describe('Connecting multiple players', () => {
       await client.focus('#player-name');
       await client.keyboard.type('dohkerm' + i);
       await client.click('#join-game');
-      await waitForMs(500);
     }));
 
     await Promise.all([host, ...clients].map(async (player, i) => {
@@ -73,6 +72,9 @@ describe('Connecting multiple players', () => {
         player.waitForSelector('#join-red'),
         player.waitForSelector('#join-blue'),
       ]);
+      await player.click(i % 2 === 0 ? '#join-red' : '#join-blue'); // unreliable :(
+      await player.click(i % 2 === 0 ? '#join-red' : '#join-blue');
+      await player.click(i % 2 === 0 ? '#join-red' : '#join-blue');
       await player.click(i % 2 === 0 ? '#join-red' : '#join-blue');
     }));
 
@@ -84,22 +86,32 @@ describe('Connecting multiple players', () => {
 
       let lastKick = Promise.resolve();
       const kickInterval = setInterval(() => {
-        lastKick = pressInput(player, 'Space', 250);
-      }, 500);
+        lastKick = pressInput(player, 'Space', 200);
+      }, 400);
 
       if (isRedTeam) {
-        await pressInput(player, 'ArrowUp', 2000); // move red out the way so blue can score
+        await pressInput(player, 'ArrowUp', 3000); // move red out the way so blue can score
       } else {
-        await pressInput(player, 'ArrowLeft', 2000);
+        await pressInput(player, 'ArrowLeft', 3000);
       }
-      
+
+      // move randomly while we wait for goal 
       await Promise.all([
-        pressRandomMovementKey(player, getRandomInt(15000)),
-        pressRandomMovementKey(player, getRandomInt(15000)),
-        pressRandomMovementKey(player, getRandomInt(15000)),
-        pressRandomMovementKey(player, getRandomInt(15000)),
-        pressRandomMovementKey(player, getRandomInt(15000)),
-        pressRandomMovementKey(player, getRandomInt(15000)),
+        pressRandomMovementKey(player, getRandomInt(3000)),
+        pressRandomMovementKey(player, getRandomInt(3000)),
+      ]);
+
+      await waitForMs(4000); // wait for kickoff
+
+      if (!isRedTeam) {
+        await pressInput(player, 'ArrowUp', 3000); // move blue out the way so red can score
+      } else {
+        await pressInput(player, 'ArrowRight', 3000);
+      }
+
+      await Promise.all([
+        pressRandomMovementKey(player, getRandomInt(9000)),
+        pressRandomMovementKey(player, getRandomInt(9000)),
       ]);
 
       clearInterval(kickInterval);

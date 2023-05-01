@@ -39,10 +39,30 @@ export type PlayerInfo = {
 }
 
 export type Input = [
-  number, // x dimension: -1 | 0 | 1
-  number, // y dimension: -1 | 0 | 1
+  number, // x dimension
+  number, // y dimension
   boolean, // isKicking
 ]
+
+type KickoffCountdownAnnouncement = {
+  type: 'KICKOFF';
+  countdownSeconds: number;
+}
+
+type GoalAnnouncement = {
+  type: 'GOAL';
+  scoringTeam: Team;
+}
+
+type MatchOverAnnouncement = {
+  type: 'FINISH';
+  winningTeam: Team; // Team.None = draw
+}
+
+export type GameAnnouncement = 
+  | KickoffCountdownAnnouncement
+  | GoalAnnouncement
+  | MatchOverAnnouncement
 
 type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object | string | number> = {
   type: T;
@@ -50,7 +70,7 @@ type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends o
 }
 
 // messages from host
-export type RTCHostMessageType =
+type RTCHostMessageType =
   | 'START'
   | 'UPDATE'
   | 'PLAYER_LINEUP_CHANGE'
@@ -65,10 +85,10 @@ export type RTCHostMessage =
 export type RTCGameStarted = RTCMessage<'START', PlayerInfo[]>
 export type RTCGameUpdate = RTCMessage<'UPDATE', TransmittedGameState>
 export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', PlayerInfo[]>
-export type RTCGameAnnouncement = RTCMessage<'GAME_ANNOUNCEMENT', string>
+export type RTCGameAnnouncement = RTCMessage<'GAME_ANNOUNCEMENT', GameAnnouncement>
 
 // messages from clients
-export type RTCClientMessageType =
+type RTCClientMessageType =
   | 'JOINED'
   | 'INPUT'
   | 'TEAM_CHANGE'

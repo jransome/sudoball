@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { createUseStyles } from 'react-jss';
 import { ResponsiveCanvas } from './ResponsiveCanvas';
+import { GameAnnouncement } from '../types';
+import { Team } from '../enums';
+import { TEAM_COLOURS } from '../config';
 
 const useStyles = createUseStyles({
   announcementMessage: {
-    color: 'gold',
+    color: 'white',
+    backgroundColor: (props: { announcementMessageColour: string; }) => props.announcementMessageColour,
   },
   announcer: {
     position: 'absolute',
@@ -22,25 +26,50 @@ const useStyles = createUseStyles({
 });
 
 type Props = {
-  announcementMessage: string;
+  announcement?: GameAnnouncement;
 }
 
-const GAME_ANNOUNCEMENT_DISPLAY_TIME_MS = 3000;
-
-export const GameRenderer = ({ announcementMessage }: Props) => {
-  const classes = useStyles();
-  const [announcement, setAnnouncement] = useState('');
+export const GameRenderer = ({ announcement }: Props) => {
+  const [announcementMessageColour, setAnnouncementMessageColour] = useState('black');
+  const classes = useStyles({ announcementMessageColour });
+  const [announcementMessage, setAnnouncementMessage] = useState('');
 
   useEffect(() => {
-    setAnnouncement(announcementMessage);
-    setTimeout(() => setAnnouncement(''), GAME_ANNOUNCEMENT_DISPLAY_TIME_MS);
-  }, [announcementMessage]);
+    if (!announcement) {
+      return;
+    }
+
+    if (announcement.type === 'GOAL') {
+      setAnnouncementMessage(`${Team[announcement.scoringTeam]} Team Scored!`);
+      setAnnouncementMessageColour(TEAM_COLOURS[announcement.scoringTeam]);
+      return;
+    }
+
+    if (announcement.type === 'FINISH') {
+      setAnnouncementMessage(`${Team[announcement.winningTeam]} Team Wins!`);
+      return;
+    }
+
+    if (announcement.type === 'KICKOFF') {
+      const updateCountdown = (secondsLeft: number) => {
+        if (secondsLeft === 0) {
+          setAnnouncementMessage('');
+          return;
+        }
+
+        setAnnouncementMessage(String(secondsLeft));
+        setTimeout(() => updateCountdown(secondsLeft - 1), 1000);
+      };
+      updateCountdown(announcement.countdownSeconds);
+      return;
+    }
+  }, [announcement]);
 
   return (
     <div className={classes.container}>
-      {announcement &&
+      {announcementMessage &&
         <div className={classes.announcer}>
-          <h1 className={classes.announcementMessage}>{announcement}</h1>
+          <h1 className={classes.announcementMessage}>{announcementMessage}</h1>
         </div>
       }
 

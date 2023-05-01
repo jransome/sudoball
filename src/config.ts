@@ -1,3 +1,4 @@
+import { Team } from './enums';
 import { scale } from './vector2Utils';
 
 // network
@@ -26,6 +27,12 @@ export const PLAYER_DRAG = 4;
 export const MOVE_FORCE = 5;
 export const KICK_FORCE = 32;
 export const KICK_RADIUS = 0.75;
+
+export const TEAM_COLOURS: Record<Team, string> = {
+  [Team.None]: 'grey',
+  [Team.Red]: 'coral',
+  [Team.Blue]: 'skyblue',
+};
 
 // ball
 export const BALL_RADIUS = 0.35;

@@ -1,5 +1,5 @@
 import { Dispatch } from 'react';
-import { PeerId, PlayerInfo, RTCClientMessage } from '../types';
+import { GameAnnouncement, PeerId, PlayerInfo, RTCClientMessage } from '../types';
 import { GAME_FRAMERATE_HZ } from '../config';
 import { Team } from '../enums';
 import { RTCHost } from './RTCHost';
@@ -10,7 +10,7 @@ import { getLocalInput } from '../input';
 type Params = {
   selfId: PeerId;
   onPlayerLineupChange: Dispatch<React.SetStateAction<PlayerInfo[]>>;
-  onGameAnnouncement: (message: string) => void;
+  onGameAnnouncement: (announcement: GameAnnouncement) => void;
 }
 
 export const createGame = ({ selfId, onPlayerLineupChange, onGameAnnouncement }: Params) => {
@@ -37,7 +37,7 @@ export const createGame = ({ selfId, onPlayerLineupChange, onGameAnnouncement }:
 
     if (message.type === 'JOINED') {
       onPlayerLineupChange((prev) => {
-        const newPlayerLineup = prev.concat({ id: clientId, name: message.payload.name, team: Team.Unassigned });
+        const newPlayerLineup = prev.concat({ id: clientId, name: message.payload.name, team: Team.None });
         rtc.broadcast({ type: 'PLAYER_LINEUP_CHANGE', payload: newPlayerLineup });
         return newPlayerLineup;
       });
@@ -63,11 +63,22 @@ export const createGame = ({ selfId, onPlayerLineupChange, onGameAnnouncement }:
       CanvasPainter.paintGameState(newState, selfId);
     });
 
+    game.on('kickoff', (countdownSeconds) => {
+      const kickoffAnnouncement: GameAnnouncement = {
+        type: 'KICKOFF',
+        countdownSeconds,
+      };
+      onGameAnnouncement(kickoffAnnouncement);
+      rtc.broadcast({ type: 'GAME_ANNOUNCEMENT', payload: kickoffAnnouncement });
+    });
+
     game.on('goal', (scoringTeam) => {
-      // TODO: only send data, not concerned with message presentation here
-      const announcementMessage = `${Team[scoringTeam]} Team Scored!`;
-      onGameAnnouncement(announcementMessage);
-      rtc.broadcast({ type: 'GAME_ANNOUNCEMENT', payload: announcementMessage });
+      const goalAnnouncement: GameAnnouncement = {
+        type: 'GOAL',
+        scoringTeam,
+      };
+      onGameAnnouncement(goalAnnouncement);
+      rtc.broadcast({ type: 'GAME_ANNOUNCEMENT', payload: goalAnnouncement });
     });
 
     game.start(players);

@@ -1,4 +1,4 @@
-import { PeerId, PlayerInfo, RTCHostMessage } from '../types';
+import { GameAnnouncement, PeerId, PlayerInfo, RTCHostMessage } from '../types';
 import { Team } from '../enums';
 import { RTCClient } from './RTCClient';
 import { CanvasPainter } from '../CanvasPainter';
@@ -12,7 +12,7 @@ type Params = {
   hostId: PeerId;
   playerName: string;
   onPlayerLineupChange: (newLineup: PlayerInfo[]) => void;
-  onGameAnnouncement: (message: string) => void;
+  onGameAnnouncement: (announcement: GameAnnouncement) => void;
   onGameStart: () => void;
 }
 
@@ -64,7 +64,7 @@ export const joinGame = async ({ selfId, hostId, playerName, onPlayerLineupChang
 
   await rtc.connectToHost(hostId);
 
-  rtc.sendToHost({ type: 'JOINED', payload: { id: selfId, name: playerName, team: Team.Unassigned } });
+  rtc.sendToHost({ type: 'JOINED', payload: { id: selfId, name: playerName, team: Team.None } });
 
   return {
     changeTeam: (newTeam: Team) => rtc.sendToHost({ type: 'TEAM_CHANGE', payload: newTeam }),
