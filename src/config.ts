@@ -1,3 +1,4 @@
+import { Team } from './enums';
 import { scale } from './vector2Utils';
 
 // network
@@ -14,6 +15,7 @@ export const SIDE_DEPTH = 1.2;
 export const POST_RADIUS = 0.3;
 
 // canvas
+export const CANVAS_MAX_ON_SCREEN_WIDTH_PX = 1500;
 export const CANVAS_SHARPNESS_FACTOR = 3;
 export const PIXELS_PER_METER = 30;
 export const CANVAS_NATIVE_RESOLUTION = scale(GAME_ENCLOSURE, PIXELS_PER_METER);
@@ -25,6 +27,12 @@ export const PLAYER_DRAG = 4;
 export const MOVE_FORCE = 5;
 export const KICK_FORCE = 32;
 export const KICK_RADIUS = 0.75;
+
+export const TEAM_COLOURS: Record<Team, string> = {
+  [Team.None]: 'grey',
+  [Team.Red]: 'coral',
+  [Team.Blue]: 'skyblue',
+};
 
 // ball
 export const BALL_RADIUS = 0.35;

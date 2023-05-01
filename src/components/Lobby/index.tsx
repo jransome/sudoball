@@ -46,7 +46,7 @@ export const Lobby = ({ visible, selfId, hostId, players, onStartGame, onTeamCha
 
   if (!visible) return null;
 
-  const someUnassigned = players.some(p => p.team === Team.Unassigned);
+  const someUnassigned = players.some(p => p.team === Team.None);
   const onCopyClick = () => {
     navigator.clipboard.writeText(inviteLink);
     setIsCopied(true);
@@ -60,7 +60,7 @@ export const Lobby = ({ visible, selfId, hostId, players, onStartGame, onTeamCha
 
         <div>
           <p>Invite Link:</p>
-          <span>{inviteLink}</span>
+          <span id='invite-link'>{inviteLink}</span>
           <button onClick={onCopyClick}>
             {isCopied ? 'Copied!' : 'Copy'}
           </button>
@@ -72,7 +72,7 @@ export const Lobby = ({ visible, selfId, hostId, players, onStartGame, onTeamCha
         />
 
         {selfId === hostId &&
-          <button id='join-game' onClick={() => onStartGame()} disabled={someUnassigned} >
+          <button id='start-game' onClick={() => onStartGame()} disabled={someUnassigned} >
             {someUnassigned ? 'Waiting for players to choose teams...' : 'Start Game'}
           </button>
         }

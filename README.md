@@ -14,6 +14,7 @@
     - [x] join via url
     - [x] allow players to choose name
     - [x] allow players to choose team
+    - [ ] allow creation of subsequent game without refreshing app
     - [ ] team randomiser
     - [ ] dynamic game variables
       - [ ] max number of goals
@@ -29,22 +30,24 @@
     - [ ] handling client drop out
     - [ ] handling host drop out
     - [ ] spectating?
-    - [ ] send simpler input data structure?
-    - [ ] better initial positioning of players
+    - [x] better initial positioning of players
     - [ ] mechanics
         - [x] teams
         - [x] starting the game
         - [x] ability to kick the ball
         - [x] add goals and posts
         - [x] goal detection
-        - [ ] reset positions after goal
-        - [ ] player stats - touches, goals, saves?
+        - [x] reset positions after goal
         - [ ] ending the match on time/goal limit
+        - [ ] centre circle thing
     - [ ] ui
         - [ ] make it look like a football pitch
+        - [x] kickoff countdown
+        - [x] goal announcement
+        - [ ] player stats - touches, goals, saves?
         - [x] kick radius indicator
         - [ ] game clock
-        - [ ] goals scored
+        - [x] goals scored
         - [x] render player names under avatar
         - [ ] meme avatars
         - [ ] sfx on kick/scoring
@@ -52,3 +55,9 @@
 
 ### Bugs
   - [ ] can't use arrow keys/space to type name (or anything else) as these are game controls
+
+### Optimisations
+  - [x] send simpler input data structure
+  - [ ] compress game state data structure + truncate numbers
+  - [ ] try running requestanimationframe inside canvas component and passing game state it as a ref?
+  - [ ] unify player lineup data structure/remove PlayerInfo[]

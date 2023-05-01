@@ -1,6 +1,6 @@
 import Peer, { DataConnection } from 'peerjs';
-import { EventEmitter } from './Events';
-import { PeerId, RTCClientMessage, RTCHostMessage } from './types';
+import { EventEmitter } from '../Events';
+import { PeerId, RTCClientMessage, RTCHostMessage } from '../types';
 
 type ConnectionClientEvents = {
   disconnected: () => void;

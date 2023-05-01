@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
-import { PeerId, PlayerInfo } from './types';
-import { CANVAS_NATIVE_RESOLUTION } from './config';
+import { GameAnnouncement, PeerId, PlayerInfo } from './types';
 import { generateReadableId } from './id';
-import { ResponsiveCanvas } from './ResponsiveCanvas';
 import { Welcome } from './components/Welcome';
 import { Lobby } from './components/Lobby';
-import { joinGame } from './joinGame';
-import { createGame } from './createGame';
+import { joinGame } from './client';
+import { createGame } from './host';
 import { Team } from './enums';
+import { GameRenderer } from './components/GameRenderer';
 
 const useStyles = createUseStyles({
-  controls: {
+  header: {
     display: 'flex',
     alignItems: 'baseline',
   },
@@ -23,7 +22,7 @@ const useStyles = createUseStyles({
   },
 });
 
-export enum View {
+enum View {
   Welcome,
   Lobby,
   Game,
@@ -36,23 +35,39 @@ export const App = () => {
   const [hostId, setHostId] = useState<PeerId>('');
   const [activeView, setActiveView] = useState(View.Welcome);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
-  
+
   const [hostInterface, setHostInterface] = useState<ReturnType<typeof createGame>>();
   const [clientInterface, setClientInterface] = useState<Awaited<ReturnType<typeof joinGame>>>();
+
+  // TODO: App doesn't need to know about this. Pass client/host into renderer instead?
+  const [gameAnnouncement, setGameAnnouncement] = useState<GameAnnouncement>(null!);
 
   return (
     <>
       <Welcome
         visible={activeView === View.Welcome}
         invitationHostId={new URLSearchParams(document.location.search).get('hostId') || ''}
-        onCreateGame={(name) => {
-          const host = createGame(selfId, name, setPlayers);
+        onCreateGame={(playerName) => {
+          setPlayers([{ id: selfId, name: playerName, team: Team.None }]);
+
+          const host = createGame({
+            selfId,
+            onPlayerLineupChange: setPlayers,
+            onGameAnnouncement: setGameAnnouncement,
+          });
           setHostInterface(host);
           setHostId(selfId);
           setActiveView(View.Lobby);
         }}
-        onJoinGame={async (hostId, name) => {
-          const client = await joinGame(hostId, name, setPlayers, () => setActiveView(View.Game));
+        onJoinGame={async (hostId, playerName) => {
+          const client = await joinGame({
+            selfId,
+            hostId,
+            playerName,
+            onPlayerLineupChange: setPlayers,
+            onGameAnnouncement: setGameAnnouncement,
+            onGameStart: () => setActiveView(View.Game),
+          });
           setClientInterface(client);
           setHostId(hostId);
           setActiveView(View.Lobby);
@@ -68,22 +83,26 @@ export const App = () => {
           setActiveView(View.Game);
           hostInterface?.startGame(players);
         }}
-        onTeamChanged={(newTeam: Team) => { 
-          hostInterface && hostInterface.changeHostTeam(newTeam);
-          clientInterface && clientInterface.requestTeamChange(newTeam);
+        onTeamChanged={(newTeam: Team) => {
+          const gameInterface = hostInterface || clientInterface;
+          gameInterface?.changeTeam(newTeam);
         }}
       />
 
-      <div className={classes.controls}>
-        <h4>Sudoball</h4>
-      </div>
+      {activeView === View.Game &&
+        <>
+          <div className={classes.header}>
+            <h4>Sudoball</h4>
+          </div>
 
-      <ResponsiveCanvas canvasResolution={CANVAS_NATIVE_RESOLUTION} />
+          <GameRenderer announcement={gameAnnouncement} />
 
-      <h4>Players:</h4>
-      <ul>
-        {players.map(({ id, name }, i) => <li key={i}>{name} | {id} {id === selfId && '(you)'}</li>)}
-      </ul>
+          <h4>Players:</h4>
+          <ul>
+            {players.map(({ id, name }, i) => <li key={i}>{name} | {id} {id === selfId && '(you)'}</li>)}
+          </ul>
+        </>
+      }
     </>
   );
 };

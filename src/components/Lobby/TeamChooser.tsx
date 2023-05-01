@@ -12,7 +12,7 @@ export const TeamChooser = ({ players, onSelfTeamChange }: Props) => {
     <div style={{ display: 'flex' }}>
 
       <div style={{ flex: 1 }}>
-        <button onClick={() => onSelfTeamChange(Team.Red)}>Join Red Team</button>
+        <button id='join-red' onClick={() => onSelfTeamChange(Team.Red)}>Join Red Team</button>
         <ul>
           {players.filter(p => p.team === Team.Red).map(p => (
             <li key={p.id}>{p.name}</li>
@@ -23,14 +23,14 @@ export const TeamChooser = ({ players, onSelfTeamChange }: Props) => {
       <div style={{ flex: 1 }}>
         <h3>Unassigned</h3>
         <ul>
-          {players.filter(p => p.team === Team.Unassigned).map(p => (
+          {players.filter(p => p.team === Team.None).map(p => (
             <li key={p.id}>{p.name}</li>
           ))}
         </ul>
       </div>
 
       <div style={{ flex: 1 }}>
-        <button onClick={() => onSelfTeamChange(Team.Blue)}>Join Blue Team</button>
+        <button id='join-blue' onClick={() => onSelfTeamChange(Team.Blue)}>Join Blue Team</button>
         <ul>
           {players.filter(p => p.team === Team.Blue).map(p => (
             <li key={p.id}>{p.name}</li>

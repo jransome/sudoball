@@ -1,5 +1,5 @@
 export enum Team {
-  Unassigned,
+  None,
   Red,
   Blue,
 }

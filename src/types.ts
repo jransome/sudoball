@@ -6,7 +6,7 @@ export type Vector2 = {
   x: number;
   y: number;
 }
-// export type Polygon = Vector2[];
+
 export type Circle = {
   position: Vector2;
   radius: number;
@@ -38,39 +38,58 @@ export type PlayerInfo = {
   team: Team;
 }
 
-export type Input = {
-  movement: Vector2;
-  kick: boolean;
+export type Input = [
+  number, // x dimension
+  number, // y dimension
+  boolean, // isKicking
+]
+
+type KickoffCountdownAnnouncement = {
+  type: 'KICKOFF';
+  countdownSeconds: number;
 }
 
-export interface TransmittedInput extends Input {
-  frameIndex: number;
+type GoalAnnouncement = {
+  type: 'GOAL';
+  scoringTeam: Team;
+  scores: Record<Team, number>;
 }
 
-export type PlayerInputs = Record<PeerId, Input>
+type MatchOverAnnouncement = {
+  type: 'FINISH';
+  winningTeam: Team; // Team.None = draw
+}
 
-type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object | number> = {
+export type GameAnnouncement = 
+  | KickoffCountdownAnnouncement
+  | GoalAnnouncement
+  | MatchOverAnnouncement
+
+type RTCMessage<T extends RTCHostMessageType | RTCClientMessageType, P extends object | string | number> = {
   type: T;
   payload: P;
 }
 
 // messages from host
-export type RTCHostMessageType =
+type RTCHostMessageType =
   | 'START'
   | 'UPDATE'
   | 'PLAYER_LINEUP_CHANGE'
+  | 'GAME_ANNOUNCEMENT'
 
 export type RTCHostMessage =
   | RTCGameStarted
   | RTCGameUpdate
   | RTCPlayerLineupChanged
+  | RTCGameAnnouncement
 
 export type RTCGameStarted = RTCMessage<'START', PlayerInfo[]>
 export type RTCGameUpdate = RTCMessage<'UPDATE', TransmittedGameState>
 export type RTCPlayerLineupChanged = RTCMessage<'PLAYER_LINEUP_CHANGE', PlayerInfo[]>
+export type RTCGameAnnouncement = RTCMessage<'GAME_ANNOUNCEMENT', GameAnnouncement>
 
 // messages from clients
-export type RTCClientMessageType =
+type RTCClientMessageType =
   | 'JOINED'
   | 'INPUT'
   | 'TEAM_CHANGE'
