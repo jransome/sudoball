@@ -3,13 +3,13 @@ import { lowerPitchVertices, postPositions, upperPitchVertices } from './game/pi
 import { RenderableGameState, Circle, Vector2, PlayerInfo, TransmittedGameState, PeerId } from './types';
 
 let ctx: CanvasRenderingContext2D = null!;
-let playerLookup: Map<string,PlayerInfo> = new Map();
+let playerLookup: Map<string, PlayerInfo> = new Map();
 
 const setContext = (context: CanvasRenderingContext2D) => {
   ctx = context;
 };
 
-const setPlayerLookup = (lookup: Map<string,PlayerInfo>) => {
+const setPlayerLookup = (lookup: Map<string, PlayerInfo>) => {
   playerLookup = lookup;
 };
 
@@ -83,18 +83,19 @@ const paintGameState = (gameState: TransmittedGameState, localPlayerId: PeerId) 
     return;
   }
 
-  const renderableState = {
+  const renderableState: RenderableGameState = {
     ballPosition: gameState.ball,
-    players: gameState.players.map((p) => {
-      const playerInfo = playerLookup.get(p.id);
+    players: gameState.players.map(([id, x, y, isKicking]) => {
+      const playerInfo = playerLookup.get(id);
       if (!playerInfo) {
-        console.error('Unrecognised player id', p);
+        console.error('Unrecognised player id', id);
       }
 
       return {
-        ...p,
         ...playerInfo!,
-        isLocalPlayer: p.id === localPlayerId,
+        position: { x, y },
+        isKicking,
+        isLocalPlayer: id === localPlayerId,
       };
     }),
   };

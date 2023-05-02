@@ -68,8 +68,8 @@ export const createGame = ({ selfId, onPlayerLineupChange, onGameAnnouncement }:
         type: 'KICKOFF',
         countdownSeconds,
       };
-      onGameAnnouncement(kickoffAnnouncement);
       rtc.broadcast({ type: 'GAME_ANNOUNCEMENT', payload: kickoffAnnouncement });
+      onGameAnnouncement(kickoffAnnouncement);
     });
 
     game.on('goal', (scoringTeam, scores) => {
@@ -78,8 +78,8 @@ export const createGame = ({ selfId, onPlayerLineupChange, onGameAnnouncement }:
         scoringTeam,
         scores,
       };
-      onGameAnnouncement(goalAnnouncement);
       rtc.broadcast({ type: 'GAME_ANNOUNCEMENT', payload: goalAnnouncement });
+      onGameAnnouncement(goalAnnouncement);
     });
 
     game.start(players);

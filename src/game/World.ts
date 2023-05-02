@@ -118,22 +118,15 @@ export class World extends EventEmitter<WorldEvents> {
     this.world.free();
   }
 
-  public step(inputs: { id: PeerId; input: Input; }[]): TransmittedGameState {
-    const getPlayerStates = inputs
-      .map(({ id, input }) => {
-        const player = this.players.get(id);
-        if (!player) {
-          throw new InputForNonExistentPlayerError('Received input for player that does not exist in game', { id, currentPlayers: this.players });
-        }
+  public step(inputs: Map<PeerId, { input: Input; }>): TransmittedGameState {
+    const players = Array.from(this.players.entries());
 
-        this.applyPlayerInput(input, player.rb, this.ballRb);
-
-        return () => ({
-          id,
-          position: player.rb.translation(),
-          isKicking: input[2],
-        });
-      });
+    players.forEach(([id, { rb }]) => {
+      const inputData = inputs.get(id);
+      if (inputData) {
+        this.applyPlayerInput(inputData.input, rb, this.ballRb);
+      }
+    });
 
     const eventQueue = new EventQueue(true);
     this.world.step(eventQueue);
@@ -154,7 +147,10 @@ export class World extends EventEmitter<WorldEvents> {
 
     return {
       ball: this.ballRb.translation(),
-      players: getPlayerStates.map(getState => getState()),
+      players: players.map(([id, { rb }]) => {
+        const { x, y } = rb.translation();
+        return [id, x, y, Boolean(inputs.get(id)?.input[2])] as const;
+      }),
     };
   }
 
@@ -171,15 +167,5 @@ export class World extends EventEmitter<WorldEvents> {
       const ballDirection = normalise(distanceVector);
       ball.applyImpulse(scale(ballDirection, KICK_FORCE), true);
     }
-  }
-}
-
-class InputForNonExistentPlayerError extends Error {
-  details: object;
-
-  constructor(message: string, details: object) {
-    super(message);
-    this.name = 'InputForNonExistentPlayerError';
-    this.details = details;
   }
 }

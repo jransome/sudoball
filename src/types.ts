@@ -10,16 +10,19 @@ export type Vector2 = {
 export type Circle = {
   position: Vector2;
   radius: number;
-};
-
-export type TransmittedGameState = {
-  ball: Vector2;
-  players: {
-    id: PeerId;
-    position: Vector2;
-    isKicking: boolean;
-  }[];
 }
+
+export type PlayerState = Readonly<[
+  PeerId,
+  number,
+  number,
+  boolean,
+]>
+
+export type TransmittedGameState = Readonly<{
+  ball: Vector2;
+  players: PlayerState[];
+}>
 
 export type RenderableGameState = {
   ballPosition: Vector2;
@@ -60,7 +63,7 @@ type MatchOverAnnouncement = {
   winningTeam: Team; // Team.None = draw
 }
 
-export type GameAnnouncement = 
+export type GameAnnouncement =
   | KickoffCountdownAnnouncement
   | GoalAnnouncement
   | MatchOverAnnouncement
