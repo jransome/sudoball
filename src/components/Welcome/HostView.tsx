@@ -3,9 +3,14 @@ import { createUseStyles } from 'react-jss';
 
 const useStyles = createUseStyles({
   createGameButton: {
-    color: '#E56B6F'
-}
-})
+    color: '#E56B6F',
+    backgroundColor: 'lightblue',
+    '&:focus': {
+      outline: 'none',
+    },
+  },
+});
+
 type Props = {
   playerName: string;
   onCreateGame: (playerName: string) => void;
@@ -20,7 +25,7 @@ export const HostView = ({ playerName, onCreateGame }: Props) => {
     setClicked(true);
     onCreateGame(playerName);
   };
-  
+
   return (
     <button
       className={classes.createGameButton}

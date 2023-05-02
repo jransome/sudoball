@@ -4,6 +4,10 @@ import { createUseStyles } from 'react-jss';
 import { ClientView } from './ClientView';
 import { HostView } from './HostView';
 
+const palette= [
+  '#542A71',
+]
+
 const useStyles = createUseStyles({
   container: {
     display: 'flex',
@@ -13,7 +17,7 @@ const useStyles = createUseStyles({
     width: '100%',
     height: '100%',
     backgroundColor: '#324376',
-    color: '#E56B6F'
+    color: '#E56B6F',
   },
   content: {
     minWidth: '300px',
@@ -34,10 +38,13 @@ const useStyles = createUseStyles({
   nameInput: {
     padding: '12px 20px',
     fontFamily: 'Bruno Ace',
-    backgroundColor:  '#324376',
-    color: '#E56B6F',
-    borderColor:'#E56B6F'
-  }
+    backgroundColor: '#324376',
+    color: '#E600BB',
+    borderColor: '#E56B6F',
+    '&:focus': {
+      outline: 'none',
+    },
+  },
 });
 
 type WelcomeProps = {
@@ -58,7 +65,7 @@ export const Welcome = ({ visible, onCreateGame, onJoinGame, invitationHostId }:
       <div className={classes.content}>
         <h1>Sudoball</h1>
 
-        <input 
+        <input
           className={classes.nameInput}
           id='player-name'
           type='text'
