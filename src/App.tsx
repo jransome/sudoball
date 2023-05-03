@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createUseStyles } from 'react-jss';
 import { GameAnnouncement, PeerId, PlayerInfo } from './types';
-import { generateReadableId } from './id';
+import { generateId } from './id';
 import { Welcome } from './components/Welcome';
 import { Lobby } from './components/Lobby';
 import { joinGame } from './client';
@@ -31,7 +31,7 @@ enum View {
 
 export const App = () => {
   const classes = useStyles();
-  const [selfId] = useState<PeerId>(generateReadableId());
+  const [selfId] = useState<PeerId>(generateId());
   const [hostId, setHostId] = useState<PeerId>('');
   const [activeView, setActiveView] = useState(View.Welcome);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);

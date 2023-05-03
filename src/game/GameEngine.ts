@@ -71,10 +71,8 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
 
       const inputs = this.playSuspended ?
         this.getNullPlayerInputs() :
-        Array
-          .from(this.lastKnownClientInputs.entries())
-          .map(([id, { input }]) => ({ id, input }))
-          .concat([{ id: this.localPlayerId, input: this.getLocalInput() }]);
+        new Map<PeerId, { input: Input; }>(this.lastKnownClientInputs)
+          .set(this.localPlayerId, { input: this.getLocalInput() });
 
       this.emit('update', this.world.step(inputs));
 
@@ -92,14 +90,6 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
   }
 
   public registerInput(otherId: PeerId, otherInput: Input) {
-    if (!this.lastKnownClientInputs.has(otherId)) {
-      console.error('Received input for player that is not in-game', {
-        otherId,
-        playerIds: this.lastKnownClientInputs.keys(),
-      });
-      return;
-    }
-
     this.lastKnownClientInputs.set(otherId, { input: otherInput, timestamp: performance.now() });
   }
 
@@ -109,10 +99,10 @@ export class GameEngine extends EventEmitter<GameEngineEvents>  {
   }
 
   private getNullPlayerInputs() {
-    return [
-      ...this.lastKnownClientInputs.keys(),
-      this.localPlayerId,
-    ].map(id => ({ id, input: getNullInput() }));
+    return new Map(
+      [...this.lastKnownClientInputs.keys(), this.localPlayerId]
+        .map(id => [id, { input: getNullInput() }]),
+    );
   }
 
   private kickoff(countdownSeconds = 3) {

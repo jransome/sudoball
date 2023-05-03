@@ -1,6 +1,6 @@
 import { World as PhysicsWorld, RigidBody, ColliderDesc, RigidBodyDesc, ActiveEvents, EventQueue } from '@dimforge/rapier2d';
-import { PlayerInfo, TransmittedGameState, PeerId, Input } from '../types';
-import { PLAYER_RADIUS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS, GAME_ENCLOSURE } from '../config';
+import { PlayerInfo, TransmittedGameState, PeerId, Input, Vector2, TransmittedPlayerState } from '../types';
+import { PLAYER_RADIUS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS, GAME_ENCLOSURE, POSITION_DECIMAL_PLACES } from '../config';
 import { Team } from '../enums';
 import { EventEmitter } from '../Events';
 import { scale, subtract, sqrMagnitude, normalise } from '../vector2Utils';
@@ -8,6 +8,7 @@ import { boundsHalfSpaces, goalSensorPositions, goalSensorSize, lowerPitchVertic
 import { CollisionGroup } from './CollisionGroups';
 
 const kickBallRadiiSumSquared = (KICK_RADIUS + BALL_RADIUS) ** 2;
+const vector2ToRoundedArray = ({ x, y }: Vector2) => [x, y].map(n => Number(n.toFixed(POSITION_DECIMAL_PLACES))) as [number, number];
 
 type WorldEvents = {
   goal: (scoringTeam: Team) => void;
@@ -118,22 +119,15 @@ export class World extends EventEmitter<WorldEvents> {
     this.world.free();
   }
 
-  public step(inputs: { id: PeerId; input: Input; }[]): TransmittedGameState {
-    const getPlayerStates = inputs
-      .map(({ id, input }) => {
-        const player = this.players.get(id);
-        if (!player) {
-          throw new InputForNonExistentPlayerError('Received input for player that does not exist in game', { id, currentPlayers: this.players });
-        }
+  public step(inputs: Map<PeerId, { input: Input; }>): TransmittedGameState {
+    const players = Array.from(this.players.entries());
 
-        this.applyPlayerInput(input, player.rb, this.ballRb);
-
-        return () => ({
-          id,
-          position: player.rb.translation(),
-          isKicking: input[2],
-        });
-      });
+    players.forEach(([id, { rb }]) => {
+      const inputData = inputs.get(id);
+      if (inputData) {
+        this.applyPlayerInput(inputData.input, rb, this.ballRb);
+      }
+    });
 
     const eventQueue = new EventQueue(true);
     this.world.step(eventQueue);
@@ -152,10 +146,14 @@ export class World extends EventEmitter<WorldEvents> {
     });
     eventQueue.free();
 
-    return {
-      ball: this.ballRb.translation(),
-      players: getPlayerStates.map(getState => getState()),
-    };
+    return [
+      ...vector2ToRoundedArray(this.ballRb.translation()),
+      ...players.flatMap(([id, { rb }]) => [
+        id,
+        ...vector2ToRoundedArray(rb.translation()),
+        Boolean(inputs.get(id)?.input[2]),
+      ] as TransmittedPlayerState),
+    ];
   }
 
   private applyPlayerInput(input: Input, player: RigidBody, ball: RigidBody) {
@@ -171,15 +169,5 @@ export class World extends EventEmitter<WorldEvents> {
       const ballDirection = normalise(distanceVector);
       ball.applyImpulse(scale(ballDirection, KICK_FORCE), true);
     }
-  }
-}
-
-class InputForNonExistentPlayerError extends Error {
-  details: object;
-
-  constructor(message: string, details: object) {
-    super(message);
-    this.name = 'InputForNonExistentPlayerError';
-    this.details = details;
   }
 }
