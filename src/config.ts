@@ -6,6 +6,7 @@ export const GAME_FRAMERATE_HZ = 60;
 export const INPUT_SEND_RATE_HZ = 40; // rate at which client inputs are polled and sent to host
 export const THRESHOLD_INPUT_CONSIDERED_LAGGING_MS = 100;
 export const MAX_TOLERATED_INPUT_LATENCY_MS = 200;
+export const POSITION_DECIMAL_PLACES = 2; // vector numbers are rounded to this many dps before being sent over the network
 
 // pitch - si units
 export const GAME_ENCLOSURE = { x: 40, y: 20 }; // size of rect defined by halfspace colliders

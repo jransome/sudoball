@@ -1,6 +1,6 @@
 import { World as PhysicsWorld, RigidBody, ColliderDesc, RigidBodyDesc, ActiveEvents, EventQueue } from '@dimforge/rapier2d';
-import { PlayerInfo, TransmittedGameState, PeerId, Input } from '../types';
-import { PLAYER_RADIUS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS, GAME_ENCLOSURE } from '../config';
+import { PlayerInfo, TransmittedGameState, PeerId, Input, Vector2, TransmittedPlayerState } from '../types';
+import { PLAYER_RADIUS, MOVE_FORCE, KICK_FORCE, BALL_RADIUS, POST_RADIUS, KICK_RADIUS, BALL_DRAG, PLAYER_DRAG, PLAYER_MASS, BALL_MASS, BALL_BOUNCINESS, GAME_ENCLOSURE, POSITION_DECIMAL_PLACES } from '../config';
 import { Team } from '../enums';
 import { EventEmitter } from '../Events';
 import { scale, subtract, sqrMagnitude, normalise } from '../vector2Utils';
@@ -8,6 +8,7 @@ import { boundsHalfSpaces, goalSensorPositions, goalSensorSize, lowerPitchVertic
 import { CollisionGroup } from './CollisionGroups';
 
 const kickBallRadiiSumSquared = (KICK_RADIUS + BALL_RADIUS) ** 2;
+const vector2ToRoundedArray = ({ x, y }: Vector2) => [x, y].map(n => Number(n.toFixed(POSITION_DECIMAL_PLACES))) as [number, number];
 
 type WorldEvents = {
   goal: (scoringTeam: Team) => void;
@@ -145,13 +146,14 @@ export class World extends EventEmitter<WorldEvents> {
     });
     eventQueue.free();
 
-    return {
-      ball: this.ballRb.translation(),
-      players: players.map(([id, { rb }]) => {
-        const { x, y } = rb.translation();
-        return [id, x, y, Boolean(inputs.get(id)?.input[2])] as const;
-      }),
-    };
+    return [
+      ...vector2ToRoundedArray(this.ballRb.translation()),
+      ...players.flatMap(([id, { rb }]) => [
+        id,
+        ...vector2ToRoundedArray(rb.translation()),
+        Boolean(inputs.get(id)?.input[2]),
+      ] as TransmittedPlayerState),
+    ];
   }
 
   private applyPlayerInput(input: Input, player: RigidBody, ball: RigidBody) {

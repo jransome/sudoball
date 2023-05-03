@@ -7,33 +7,14 @@ export type Vector2 = {
   y: number;
 }
 
-export type Circle = {
-  position: Vector2;
-  radius: number;
-}
-
-export type PlayerState = Readonly<[
+export type TransmittedPlayerState = Readonly<[
   PeerId,
   number,
   number,
   boolean,
 ]>
 
-export type TransmittedGameState = Readonly<{
-  ball: Vector2;
-  players: PlayerState[];
-}>
-
-export type RenderableGameState = {
-  ballPosition: Vector2;
-  players: {
-    name: string;
-    team: Team;
-    position: Vector2;
-    isKicking: boolean;
-    isLocalPlayer: boolean;
-  }[];
-}
+export type TransmittedGameState = Readonly<(PeerId | number | boolean)[]>
 
 export type PlayerInfo = {
   id: PeerId;
