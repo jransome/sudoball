@@ -4,10 +4,6 @@ import { createUseStyles } from 'react-jss';
 import { ClientView } from './ClientView';
 import { HostView } from './HostView';
 
-const palette= [
-  '#542A71',
-]
-
 const useStyles = createUseStyles({
   container: {
     display: 'flex',
