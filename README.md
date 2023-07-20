@@ -1,4 +1,5 @@
 # Sudoball
+![Screenshot 2023-07-20 at 16 45 16](https://github.com/jransome/sudoball/assets/22540551/361138c1-31d8-4e92-870d-c736ce89a791)
 
 ## Plan
 - [ ] think of better name
