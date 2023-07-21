@@ -1,6 +1,19 @@
-import { BALL_RADIUS, KICK_RADIUS, PIXELS_PER_METER, PLAYER_RADIUS, POST_RADIUS, TEAM_COLOURS } from './config';
+import {
+  BALL_RADIUS, PITCH_CIRCLE_RADIUS, SPOT_RADIUS,
+  KICK_RADIUS,
+  PIXELS_PER_METER,
+  PLAYER_RADIUS,
+  POST_RADIUS,
+  TEAM_COLOURS, PENALTY_ARC_ANGLE
+} from './config';
 import { Team } from './enums';
-import { lowerPitchVertices, postPositions, upperPitchVertices } from './game/pitch';
+import {
+  halfWayLineVertices,
+  lowerPitchVertices, redPenaltyBoxVertices, penaltySpotsVertices,
+  pitchMidpoint,
+  postPositions,
+  upperPitchVertices, bluePenaltyBoxVertices
+} from './game/pitch';
 import { PlayerInfo, TransmittedGameState, PeerId, TransmittedPlayerState } from './types';
 
 type RenderablePlayer = {
@@ -34,18 +47,21 @@ const paintLine = (ctx: CanvasRenderingContext2D, strokeColour: string, vertices
   ctx.stroke();
 };
 
-const paintCircle = (ctx: CanvasRenderingContext2D, fillColour: string, strokeColour: string, x: number, y: number, radius: number, pixelsPerMeter: number) => {
+const paintArc = (ctx: CanvasRenderingContext2D, fillColour: string, strokeColour: string, x: number, y: number, radius: number, startAngle: number, endAngle: number, pixelsPerMeter: number) => {
   ctx.beginPath();
   ctx.fillStyle = fillColour;
   ctx.arc(
-    ...[x, y, radius].map(n => n * pixelsPerMeter) as [number, number, number],
-    0, 2 * Math.PI, false,
+      ...[x, y, radius].map(n => n * pixelsPerMeter) as [number, number, number],
+      startAngle * Math.PI / 180, endAngle * Math.PI / 180, false,
   );
   ctx.fill();
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = strokeColour;
   ctx.stroke();
 };
+
+const paintCircle = (ctx: CanvasRenderingContext2D, fillColour: string, strokeColour: string, x: number, y: number, radius: number, pixelsPerMeter: number) =>
+    paintArc(ctx, fillColour, strokeColour, x, y, radius, 0, 360, pixelsPerMeter);
 
 const paintPlayer = (
   ctx: CanvasRenderingContext2D,
@@ -80,6 +96,16 @@ const paintPitch = (ctx: CanvasRenderingContext2D) => {
   paintLine(ctx, 'white', lowerPitchVertices, PIXELS_PER_METER);
   paintLine(ctx, 'white', postPositions.slice(0, 2), PIXELS_PER_METER); // red goal line
   paintLine(ctx, 'white', postPositions.slice(-2), PIXELS_PER_METER); // blue goal line
+
+  paintLine(ctx, 'white', halfWayLineVertices, PIXELS_PER_METER); // half way line
+  paintCircle(ctx, 'transparent', 'white', pitchMidpoint.x, pitchMidpoint.y, PITCH_CIRCLE_RADIUS, PIXELS_PER_METER); // centre circle
+  paintCircle(ctx, 'white', 'white', pitchMidpoint.x, pitchMidpoint.y, SPOT_RADIUS, PIXELS_PER_METER); // centre spot
+  
+  paintLine(ctx, 'white', redPenaltyBoxVertices, PIXELS_PER_METER); // red penalty box
+  paintArc(ctx, 'transparent', 'white', penaltySpotsVertices[0][0], penaltySpotsVertices[0][1], PITCH_CIRCLE_RADIUS, -PENALTY_ARC_ANGLE, PENALTY_ARC_ANGLE, PIXELS_PER_METER); // red penalty circle segment
+  paintLine(ctx, 'white', bluePenaltyBoxVertices, PIXELS_PER_METER); // blue penalty box
+  paintArc(ctx, 'transparent', 'white', penaltySpotsVertices[1][0], penaltySpotsVertices[1][1], PITCH_CIRCLE_RADIUS, 180 - PENALTY_ARC_ANGLE, PENALTY_ARC_ANGLE - 180, PIXELS_PER_METER); // blue penalty circle segment
+  penaltySpotsVertices.forEach(([x, y]) => paintCircle(ctx, 'white', 'white', x, y, SPOT_RADIUS, PIXELS_PER_METER)); // penalty spots
 
   postPositions.forEach(([x, y]) => paintCircle(ctx, 'black', 'white', x, y, POST_RADIUS, PIXELS_PER_METER));
 };
