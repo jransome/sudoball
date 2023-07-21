@@ -16,15 +16,12 @@ const useStyles = createUseStyles({
   },
   content: {
     minWidth: '300px',
-    // backgroundColor: 'rgb(0,0,74)',
     borderRadius: '4px',
-    // border: "solid #EB3FFF",
     padding: '30px',
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column'
   },
   controls: {
-    paddingTop: '20px',
     height: '150px',
     display: 'flex',
     flexDirection: 'column',
@@ -32,8 +29,10 @@ const useStyles = createUseStyles({
     justifyContent: 'space-around',
   },
   nameInput: {
-    padding: '12px 20px',
+    paddingTop: '10px',
     fontFamily: 'Bruno Ace',
+    textAlign: 'center',
+    fontSize: '20px',
     background: "transparent",
     color: '#38EFEF',
      border: 'none',
@@ -42,8 +41,9 @@ const useStyles = createUseStyles({
     },
     },
   
-  name:{
-    color: '#EB3FFF'
+  title:{
+    color: '#EB3FFF',
+    textAlign: 'center'
   }
 });
 
@@ -63,8 +63,7 @@ export const Welcome = ({ visible, onCreateGame, onJoinGame, invitationHostId }:
   return (
     <div className={classes.container}>
       <div className={classes.content}>
-        <h1 className={classes.name}>Sudoball</h1>
-
+        <h1 className={classes.title}>Sudoball</h1>
         <input 
           className={classes.nameInput}
           id='player-name'
