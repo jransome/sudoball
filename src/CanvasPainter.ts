@@ -9,7 +9,7 @@ import {
 import { Team } from './enums';
 import {
   halfWayLineVertices,
-  lowerPitchVertices, redPenaltyBoxVertices, penaltySpotsVertices,
+  lowerPitchVertices, redPenaltyBoxVertices, penaltyArcCentres,
   pitchMidpoint,
   postPositions,
   upperPitchVertices, bluePenaltyBoxVertices
@@ -102,10 +102,9 @@ const paintPitch = (ctx: CanvasRenderingContext2D) => {
   paintCircle(ctx, 'white', 'white', pitchMidpoint.x, pitchMidpoint.y, SPOT_RADIUS, PIXELS_PER_METER); // centre spot
   
   paintLine(ctx, 'white', redPenaltyBoxVertices, PIXELS_PER_METER); // red penalty box
-  paintArc(ctx, 'transparent', 'white', penaltySpotsVertices[0][0], penaltySpotsVertices[0][1], PITCH_CIRCLE_RADIUS, -PENALTY_ARC_ANGLE, PENALTY_ARC_ANGLE, PIXELS_PER_METER); // red penalty circle segment
+  paintArc(ctx, 'transparent', 'white', penaltyArcCentres[0][0], penaltyArcCentres[0][1], PITCH_CIRCLE_RADIUS, -PENALTY_ARC_ANGLE, PENALTY_ARC_ANGLE, PIXELS_PER_METER); // red penalty circle segment
   paintLine(ctx, 'white', bluePenaltyBoxVertices, PIXELS_PER_METER); // blue penalty box
-  paintArc(ctx, 'transparent', 'white', penaltySpotsVertices[1][0], penaltySpotsVertices[1][1], PITCH_CIRCLE_RADIUS, 180 - PENALTY_ARC_ANGLE, PENALTY_ARC_ANGLE - 180, PIXELS_PER_METER); // blue penalty circle segment
-  penaltySpotsVertices.forEach(([x, y]) => paintCircle(ctx, 'white', 'white', x, y, SPOT_RADIUS, PIXELS_PER_METER)); // penalty spots
+  paintArc(ctx, 'transparent', 'white', penaltyArcCentres[1][0], penaltyArcCentres[1][1], PITCH_CIRCLE_RADIUS, 180 - PENALTY_ARC_ANGLE, PENALTY_ARC_ANGLE - 180, PIXELS_PER_METER); // blue penalty circle segment
 
   postPositions.forEach(([x, y]) => paintCircle(ctx, 'black', 'white', x, y, POST_RADIUS, PIXELS_PER_METER));
 };

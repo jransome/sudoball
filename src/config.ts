@@ -16,8 +16,8 @@ export const SIDE_DEPTH = 1.2;
 export const POST_RADIUS = 0.3;
 export const SPOT_RADIUS = 0.1;
 export const PITCH_CIRCLE_RADIUS = 4;
-export const PENALTY_POST_HORIZONTAL_DISTANCE_FROM_GOAL = 4.9;
-export const PENALTY_BOX_PANEL_LENGTH = 7.3;
+export const PENALTY_BOX_PANEL_WIDTH = 7.3;
+export const PENALTY_BOX_PANEL_LENGTH = 6.4;
 export const PENALTY_ARC_ANGLE = 53;
 
 // canvas
