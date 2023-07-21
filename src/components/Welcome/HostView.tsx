@@ -3,10 +3,11 @@ import { createUseStyles } from 'react-jss';
 
 const useStyles = createUseStyles({
   createGameButton: {
-    color: '#E56B6F',
-    backgroundColor: 'lightblue',
-    '&:focus': {
-      outline: 'none',
+    color: '#060214',
+    backgroundColor: '#EB3FFF',
+    '&:hover': {
+      backgroundColor: '#38EFEF',
+      color: '#242F40'
     },
   },
 });

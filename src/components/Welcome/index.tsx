@@ -12,13 +12,13 @@ const useStyles = createUseStyles({
     position: 'fixed',
     width: '100%',
     height: '100%',
-    backgroundColor: '#324376',
-    color: '#E56B6F',
+    background: "linear-gradient(to right top, #11108e, #10119d, #1011ad, #0e12bc, #0d12cc, #3f0ed3, #5b08d9, #7200df, #9700dc, #b400d9, #ce00d6, #e518d3)"
   },
   content: {
     minWidth: '300px',
-    backgroundColor: '#324376',
+    // backgroundColor: 'rgb(0,0,74)',
     borderRadius: '4px',
+    // border: "solid #EB3FFF",
     padding: '30px',
     display: 'flex',
     flexDirection: 'column',
@@ -34,13 +34,17 @@ const useStyles = createUseStyles({
   nameInput: {
     padding: '12px 20px',
     fontFamily: 'Bruno Ace',
-    backgroundColor: '#324376',
-    color: '#E600BB',
-    borderColor: '#E56B6F',
+    background: "transparent",
+    color: '#38EFEF',
+     border: 'none',
     '&:focus': {
       outline: 'none',
     },
-  },
+    },
+  
+  name:{
+    color: '#EB3FFF'
+  }
 });
 
 type WelcomeProps = {
@@ -59,9 +63,9 @@ export const Welcome = ({ visible, onCreateGame, onJoinGame, invitationHostId }:
   return (
     <div className={classes.container}>
       <div className={classes.content}>
-        <h1>Sudoball</h1>
+        <h1 className={classes.name}>Sudoball</h1>
 
-        <input
+        <input 
           className={classes.nameInput}
           id='player-name'
           type='text'
