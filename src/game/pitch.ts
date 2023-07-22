@@ -33,6 +33,16 @@ export const lowerPitchVertices: ReadonlyArray<readonly [number, number]> = [
   [GAME_ENCLOSURE.x, lowerGoalPostY], // bottom right goal back
 ];
 
+export const redGoalBar: ReadonlyArray<readonly [number, number]> = [
+  [0, lowerGoalPostY], // bottom left goal back
+  [0, upperGoalPostY] // top left goal back
+];
+
+export const blueGoalBar: ReadonlyArray<readonly [number, number]> = [
+  [GAME_ENCLOSURE.x, lowerGoalPostY], // bottom right goal back
+  [GAME_ENCLOSURE.x, upperGoalPostY] // top right goal back  
+];
+
 export const postPositions: ReadonlyArray<readonly [number, number]> = [
   [GOAL_DEPTH, upperGoalPostY], // top left
   [GOAL_DEPTH, lowerGoalPostY], // bottom left

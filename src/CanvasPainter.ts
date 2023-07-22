@@ -21,7 +21,7 @@ import {
   lowerPitchVertices, redPenaltyBoxVertices, penaltyArcCentres,
   pitchMidpoint,
   postPositions,
-  upperPitchVertices, bluePenaltyBoxVertices
+  upperPitchVertices, bluePenaltyBoxVertices, redGoalBar, blueGoalBar
 } from './game/pitch';
 import { PlayerInfo, TransmittedGameState, PeerId, TransmittedPlayerState } from './types';
 
@@ -117,7 +117,7 @@ const colourThePitch = () => {
     ctx.restore();
   };
   
-  // painting the border
+  // colouring the border
   ctx.fillStyle = DARKEST_PURPLE;
   ctx.fillRect(0, 0, CANVAS_NATIVE_RESOLUTION.x, SIDE_DEPTH * PIXELS_PER_METER); // top
   ctx.fillRect(0, CANVAS_NATIVE_RESOLUTION.y - SIDE_DEPTH * PIXELS_PER_METER, CANVAS_NATIVE_RESOLUTION.x, SIDE_DEPTH * PIXELS_PER_METER); // bottom
@@ -131,7 +131,9 @@ const paintPitch = (ctx: CanvasRenderingContext2D) => {
   paintLine(ctx, 'white', upperPitchVertices, PIXELS_PER_METER); // TODO: use moveTo
   paintLine(ctx, 'white', lowerPitchVertices, PIXELS_PER_METER);
   paintLine(ctx, 'white', postPositions.slice(0, 2), PIXELS_PER_METER); // red goal line
+  paintLine(ctx, 'white', redGoalBar, PIXELS_PER_METER);
   paintLine(ctx, 'white', postPositions.slice(-2), PIXELS_PER_METER); // blue goal line
+  paintLine(ctx, 'white', blueGoalBar, PIXELS_PER_METER);
 
   paintLine(ctx, 'white', halfWayLineVertices, PIXELS_PER_METER); // half way line
   paintCircle(ctx, 'transparent', 'white', pitchMidpoint.x, pitchMidpoint.y, PITCH_CIRCLE_RADIUS, PIXELS_PER_METER); // centre circle
@@ -150,7 +152,7 @@ const paint = (gameState: TransmittedGameState, localPlayerId: PeerId) => {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
   paintPitch(ctx);
-  paintCircle(ctx, 'white', 'white', ...gameState.slice(0, 2) as [number, number], BALL_RADIUS, PIXELS_PER_METER); // ball
+  paintCircle(ctx, 'white', 'black', ...gameState.slice(0, 2) as [number, number], BALL_RADIUS, PIXELS_PER_METER); // ball
 
   for (let i = 2; i < gameState.length; i += 4) { // ignore ball position and read 4 elements (one player) at a time
     const [id, x, y, isKicking] = gameState.slice(i, i + 4) as unknown as TransmittedPlayerState;
