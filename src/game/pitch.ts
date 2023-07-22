@@ -46,8 +46,8 @@ export const halfWayLineVertices: ReadonlyArray<readonly [number, number]> = [
 ];
 
 export const penaltyArcCentres: ReadonlyArray<readonly  [number, number]> = [
-  [GOAL_DEPTH + PITCH_CIRCLE_RADIUS, pitchMidpoint.y], // red penalty spot
-  [GAME_ENCLOSURE.x - GOAL_DEPTH - PITCH_CIRCLE_RADIUS, pitchMidpoint.y] // blue penalty spot
+  [GOAL_DEPTH + PITCH_CIRCLE_RADIUS, pitchMidpoint.y], // red
+  [GAME_ENCLOSURE.x - GOAL_DEPTH - PITCH_CIRCLE_RADIUS, pitchMidpoint.y] // blue
 ];
 
 export const redPenaltyBoxVertices: ReadonlyArray<readonly [number, number]> = [

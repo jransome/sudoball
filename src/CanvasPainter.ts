@@ -4,7 +4,7 @@ import {
   PIXELS_PER_METER,
   PLAYER_RADIUS,
   POST_RADIUS,
-  TEAM_COLOURS, PENALTY_ARC_ANGLE
+  TEAM_COLOURS, PENALTY_ARC_ANGLE, GAME_ENCLOSURE, CANVAS_NATIVE_RESOLUTION, SIDE_DEPTH, GOAL_DEPTH
 } from './config';
 import { Team } from './enums';
 import {
@@ -91,7 +91,34 @@ const paintPlayer = (
   ctx.fillText(player.name, player.x * PIXELS_PER_METER, player.y * PIXELS_PER_METER + 1.2 * PIXELS_PER_METER);
 };
 
+const colourThePitch = () => {
+  
+  // creating the pitch pattern
+  for (let j = 0; j < GAME_ENCLOSURE.x / 2 - 2; j++) {
+    let colour;
+    if(j % 2 === 0 ) {
+      colour = '#73219a';
+    } else {
+      colour = '#7b23a2';
+    }
+    ctx.save();
+    ctx.transform(1,0,-2,1, 2 * PIXELS_PER_METER,0);
+    ctx.fillStyle = colour;
+    ctx.fillRect(4 * (j + 0.5) * PIXELS_PER_METER, SIDE_DEPTH * PIXELS_PER_METER, 4 * PIXELS_PER_METER, (GAME_ENCLOSURE.y - 2 * SIDE_DEPTH) * PIXELS_PER_METER);
+    ctx.restore();
+  }
+  
+  // painting the border
+  ctx.fillStyle = '#73219a';
+  ctx.fillRect(0, 0, CANVAS_NATIVE_RESOLUTION.x, SIDE_DEPTH * PIXELS_PER_METER); // top
+  ctx.fillRect(0, CANVAS_NATIVE_RESOLUTION.y - SIDE_DEPTH * PIXELS_PER_METER, CANVAS_NATIVE_RESOLUTION.x, SIDE_DEPTH * PIXELS_PER_METER); // bottom
+  ctx.fillRect(0, 0, GOAL_DEPTH * PIXELS_PER_METER, CANVAS_NATIVE_RESOLUTION.y); // left
+  ctx.fillRect(CANVAS_NATIVE_RESOLUTION.x - GOAL_DEPTH * PIXELS_PER_METER, 0, GOAL_DEPTH * PIXELS_PER_METER, CANVAS_NATIVE_RESOLUTION.y); // right
+};
+
 const paintPitch = (ctx: CanvasRenderingContext2D) => {
+  colourThePitch();
+  
   paintLine(ctx, 'white', upperPitchVertices, PIXELS_PER_METER); // TODO: use moveTo
   paintLine(ctx, 'white', lowerPitchVertices, PIXELS_PER_METER);
   paintLine(ctx, 'white', postPositions.slice(0, 2), PIXELS_PER_METER); // red goal line
@@ -106,7 +133,8 @@ const paintPitch = (ctx: CanvasRenderingContext2D) => {
   paintLine(ctx, 'white', bluePenaltyBoxVertices, PIXELS_PER_METER); // blue penalty box
   paintArc(ctx, 'transparent', 'white', penaltyArcCentres[1][0], penaltyArcCentres[1][1], PITCH_CIRCLE_RADIUS, 180 - PENALTY_ARC_ANGLE, PENALTY_ARC_ANGLE - 180, PIXELS_PER_METER); // blue penalty circle segment
 
-  postPositions.forEach(([x, y]) => paintCircle(ctx, 'black', 'white', x, y, POST_RADIUS, PIXELS_PER_METER));
+  postPositions.slice(0, 2).forEach(([x, y]) => paintCircle(ctx, TEAM_COLOURS[Team.Red], 'white', x, y, POST_RADIUS, PIXELS_PER_METER)); // red goal posts
+  postPositions.slice(-2).forEach(([x, y]) => paintCircle(ctx, TEAM_COLOURS[Team.Blue], 'white', x, y, POST_RADIUS, PIXELS_PER_METER)); // blue goal posts
 };
 
 const paint = (gameState: TransmittedGameState, localPlayerId: PeerId) => {
