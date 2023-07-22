@@ -45,13 +45,13 @@ const setPlayerLookup = (lookup: Map<string, PlayerInfo>) => {
   playerLookup = lookup;
 };
 
-const paintLine = (ctx: CanvasRenderingContext2D, strokeColour: string, vertices: ReadonlyArray<readonly [number, number]>, pixelsPerMeter: number) => {
+const paintLine = (ctx: CanvasRenderingContext2D, strokeColour: string, vertices: ReadonlyArray<readonly [number, number]>, pixelsPerMeter: number, lineWidth?: number) => {
   ctx.beginPath();
   vertices.forEach(v => ctx.lineTo(
     v[0] * pixelsPerMeter,
     v[1] * pixelsPerMeter,
   ));
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = lineWidth ?? 1.5;
   ctx.strokeStyle = strokeColour;
   ctx.stroke();
 };
@@ -131,9 +131,9 @@ const paintPitch = (ctx: CanvasRenderingContext2D) => {
   paintLine(ctx, 'white', upperPitchVertices, PIXELS_PER_METER); // TODO: use moveTo
   paintLine(ctx, 'white', lowerPitchVertices, PIXELS_PER_METER);
   paintLine(ctx, 'white', postPositions.slice(0, 2), PIXELS_PER_METER); // red goal line
-  paintLine(ctx, 'white', redGoalBar, PIXELS_PER_METER);
+  paintLine(ctx, 'white', redGoalBar, PIXELS_PER_METER, 3);
   paintLine(ctx, 'white', postPositions.slice(-2), PIXELS_PER_METER); // blue goal line
-  paintLine(ctx, 'white', blueGoalBar, PIXELS_PER_METER);
+  paintLine(ctx, 'white', blueGoalBar, PIXELS_PER_METER, 3);
 
   paintLine(ctx, 'white', halfWayLineVertices, PIXELS_PER_METER); // half way line
   paintCircle(ctx, 'transparent', 'white', pitchMidpoint.x, pitchMidpoint.y, PITCH_CIRCLE_RADIUS, PIXELS_PER_METER); // centre circle
