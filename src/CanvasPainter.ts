@@ -1,10 +1,19 @@
 import {
-  BALL_RADIUS, PITCH_CIRCLE_RADIUS, SPOT_RADIUS,
+  BALL_RADIUS,
+  PITCH_CIRCLE_RADIUS,
+  SPOT_RADIUS,
   KICK_RADIUS,
   PIXELS_PER_METER,
   PLAYER_RADIUS,
   POST_RADIUS,
-  TEAM_COLOURS, PENALTY_ARC_ANGLE, GAME_ENCLOSURE, CANVAS_NATIVE_RESOLUTION, SIDE_DEPTH, GOAL_DEPTH
+  TEAM_COLOURS,
+  PENALTY_ARC_ANGLE,
+  GAME_ENCLOSURE,
+  CANVAS_NATIVE_RESOLUTION,
+  SIDE_DEPTH,
+  GOAL_DEPTH,
+  DARK_PURPLE,
+  LIGHT_PURPLE, DARKEST_PURPLE
 } from './config';
 import { Team } from './enums';
 import {
@@ -97,19 +106,19 @@ const colourThePitch = () => {
   for (let j = 0; j < GAME_ENCLOSURE.x / 2 - 2; j++) {
     let colour;
     if(j % 2 === 0 ) {
-      colour = '#73219a';
+      colour = DARK_PURPLE;
     } else {
-      colour = '#7b23a2';
+      colour = LIGHT_PURPLE;
     }
     ctx.save();
     ctx.transform(1,0,-2,1, 2 * PIXELS_PER_METER,0);
     ctx.fillStyle = colour;
     ctx.fillRect(4 * (j + 0.5) * PIXELS_PER_METER, SIDE_DEPTH * PIXELS_PER_METER, 4 * PIXELS_PER_METER, (GAME_ENCLOSURE.y - 2 * SIDE_DEPTH) * PIXELS_PER_METER);
     ctx.restore();
-  }
+  };
   
   // painting the border
-  ctx.fillStyle = '#73219a';
+  ctx.fillStyle = DARKEST_PURPLE;
   ctx.fillRect(0, 0, CANVAS_NATIVE_RESOLUTION.x, SIDE_DEPTH * PIXELS_PER_METER); // top
   ctx.fillRect(0, CANVAS_NATIVE_RESOLUTION.y - SIDE_DEPTH * PIXELS_PER_METER, CANVAS_NATIVE_RESOLUTION.x, SIDE_DEPTH * PIXELS_PER_METER); // bottom
   ctx.fillRect(0, 0, GOAL_DEPTH * PIXELS_PER_METER, CANVAS_NATIVE_RESOLUTION.y); // left
