@@ -20,10 +20,10 @@ export const PENALTY_BOX_PANEL_WIDTH = 7.3;
 export const PENALTY_BOX_PANEL_LENGTH = 6.4;
 export const PENALTY_ARC_ANGLE = 53;
 
-// pitch - colours:
-export const DARKEST_PURPLE = '#5b1b8f';
-export const DARK_PURPLE = '#73219a';
-export const LIGHT_PURPLE = '#7b23a2';
+// pitch - appearance:
+export const PITCH_BORDER_COLOUR = '#5b1b8f';
+export const PITCH_DARK_STRIPE_COLOUR = '#73219a';
+export const PITCH_LIGHT_STRIPE_COLOUR = '#7b23a2';
 
 // canvas
 export const CANVAS_MAX_ON_SCREEN_WIDTH_PX = 1500;

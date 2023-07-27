@@ -5,10 +5,10 @@ import {
   GOAL_HALF_WIDTH, PENALTY_BOX_PANEL_LENGTH,
   PENALTY_BOX_PANEL_WIDTH,
   PITCH_CIRCLE_RADIUS,
-  SIDE_DEPTH
+  SIDE_DEPTH,
 } from '../config';
-import {Vector2} from '../types';
-import {scale} from '../vector2Utils';
+import { Vector2 } from '../types';
+import { scale } from '../vector2Utils';
 
 export const pitchMidpoint = scale(GAME_ENCLOSURE, 0.5);
 
@@ -35,12 +35,12 @@ export const lowerPitchVertices: ReadonlyArray<readonly [number, number]> = [
 
 export const redGoalBar: ReadonlyArray<readonly [number, number]> = [
   [0, lowerGoalPostY], // bottom left goal back
-  [0, upperGoalPostY] // top left goal back
+  [0, upperGoalPostY], // top left goal back
 ];
 
 export const blueGoalBar: ReadonlyArray<readonly [number, number]> = [
   [GAME_ENCLOSURE.x, lowerGoalPostY], // bottom right goal back
-  [GAME_ENCLOSURE.x, upperGoalPostY] // top right goal back  
+  [GAME_ENCLOSURE.x, upperGoalPostY], // top right goal back  
 ];
 
 export const postPositions: ReadonlyArray<readonly [number, number]> = [
@@ -52,26 +52,26 @@ export const postPositions: ReadonlyArray<readonly [number, number]> = [
 
 export const halfWayLineVertices: ReadonlyArray<readonly [number, number]> = [
   [pitchMidpoint.x, SIDE_DEPTH], // middle top
-  [pitchMidpoint.x, GAME_ENCLOSURE.y - SIDE_DEPTH] // middle bottom
+  [pitchMidpoint.x, GAME_ENCLOSURE.y - SIDE_DEPTH], // middle bottom
 ];
 
-export const penaltyArcCentres: ReadonlyArray<readonly  [number, number]> = [
+export const penaltyArcCentres: ReadonlyArray<readonly [number, number]> = [
   [GOAL_DEPTH + PITCH_CIRCLE_RADIUS, pitchMidpoint.y], // red
-  [GAME_ENCLOSURE.x - GOAL_DEPTH - PITCH_CIRCLE_RADIUS, pitchMidpoint.y] // blue
+  [GAME_ENCLOSURE.x - GOAL_DEPTH - PITCH_CIRCLE_RADIUS, pitchMidpoint.y], // blue
 ];
 
 export const redPenaltyBoxVertices: ReadonlyArray<readonly [number, number]> = [
-    [GOAL_DEPTH, upperGoalPostY + PENALTY_BOX_PANEL_WIDTH], // top left
-    [GOAL_DEPTH + PENALTY_BOX_PANEL_LENGTH, upperGoalPostY + PENALTY_BOX_PANEL_WIDTH], // top right
-    [GOAL_DEPTH + PENALTY_BOX_PANEL_LENGTH, lowerGoalPostY - PENALTY_BOX_PANEL_WIDTH], // bottom right
-    [GOAL_DEPTH, lowerGoalPostY - PENALTY_BOX_PANEL_WIDTH] // bottom left
+  [GOAL_DEPTH, upperGoalPostY + PENALTY_BOX_PANEL_WIDTH], // top left
+  [GOAL_DEPTH + PENALTY_BOX_PANEL_LENGTH, upperGoalPostY + PENALTY_BOX_PANEL_WIDTH], // top right
+  [GOAL_DEPTH + PENALTY_BOX_PANEL_LENGTH, lowerGoalPostY - PENALTY_BOX_PANEL_WIDTH], // bottom right
+  [GOAL_DEPTH, lowerGoalPostY - PENALTY_BOX_PANEL_WIDTH], // bottom left
 ];
 
 export const bluePenaltyBoxVertices: ReadonlyArray<readonly [number, number]> = [
   [GAME_ENCLOSURE.x - GOAL_DEPTH, upperGoalPostY + PENALTY_BOX_PANEL_WIDTH], // top left
   [GAME_ENCLOSURE.x - GOAL_DEPTH - PENALTY_BOX_PANEL_LENGTH, upperGoalPostY + PENALTY_BOX_PANEL_WIDTH], // top right
   [GAME_ENCLOSURE.x - GOAL_DEPTH - PENALTY_BOX_PANEL_LENGTH, lowerGoalPostY - PENALTY_BOX_PANEL_WIDTH], // bottom right
-  [GAME_ENCLOSURE.x - GOAL_DEPTH, lowerGoalPostY - PENALTY_BOX_PANEL_WIDTH] // bottom left
+  [GAME_ENCLOSURE.x - GOAL_DEPTH, lowerGoalPostY - PENALTY_BOX_PANEL_WIDTH], // bottom left
 ];
 
 export const goalSensorSize = [(GOAL_DEPTH - BALL_RADIUS * 2) / 2, GOAL_HALF_WIDTH] as const;
