@@ -1,16 +1,5 @@
 import { useState } from 'react';
-import { createUseStyles } from 'react-jss';
-
-const useStyles = createUseStyles({
-  createGameButton: {
-    color: '#060214',
-    backgroundColor: '#EB3FFF',
-    '&:hover': {
-      backgroundColor: '#38EFEF',
-      color: '#242F40'
-    },
-  },
-});
+import { useStyles } from './Welcome.styles';
 
 type Props = {
   playerName: string;
@@ -29,7 +18,7 @@ export const HostView = ({ playerName, onCreateGame }: Props) => {
 
   return (
     <button
-      className={classes.createGameButton}
+      className={classes.createOrJoinGameButton}
       id='create-game'
       onClick={onCreateClicked}
       disabled={!playerName || clicked}
