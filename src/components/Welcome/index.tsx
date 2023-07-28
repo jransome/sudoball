@@ -1,47 +1,8 @@
 import { useState } from 'react';
 import { PeerId } from '../../types';
-import { createUseStyles } from 'react-jss';
 import { ClientView } from './ClientView';
 import { HostView } from './HostView';
-
-const useStyles = createUseStyles({
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'fixed',
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#324376',
-    color: '#E56B6F',
-  },
-  content: {
-    minWidth: '300px',
-    backgroundColor: '#324376',
-    borderRadius: '4px',
-    padding: '30px',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  controls: {
-    paddingTop: '20px',
-    height: '150px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  nameInput: {
-    padding: '12px 20px',
-    fontFamily: 'Bruno Ace',
-    backgroundColor: '#324376',
-    color: '#E600BB',
-    borderColor: '#E56B6F',
-    '&:focus': {
-      outline: 'none',
-    },
-  },
-});
+import { useStyles } from './Welcome.styles';
 
 type WelcomeProps = {
   visible: boolean;
@@ -59,9 +20,8 @@ export const Welcome = ({ visible, onCreateGame, onJoinGame, invitationHostId }:
   return (
     <div className={classes.container}>
       <div className={classes.content}>
-        <h1>Sudoball</h1>
-
-        <input
+        <h1 className={classes.title}>Sudoball</h1>
+        <input 
           className={classes.nameInput}
           id='player-name'
           type='text'

@@ -5,14 +5,14 @@ import { Team } from '../../enums';
 import { TeamChooser } from './TeamChooser';
 
 const useStyles = createUseStyles({
-  container: {
+    container: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'fixed',
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgb(0, 0, 0, 0.6)',
+    background: "linear-gradient(to right top, #11108e, #10119d, #1011ad, #0e12bc, #0d12cc, #3f0ed3, #5b08d9, #7200df, #9700dc, #b400d9, #ce00d6, #e518d3)"
   },
   content: {
     minWidth: '300px',

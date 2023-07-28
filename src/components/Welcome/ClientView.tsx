@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PeerId } from '../../types';
+import { useStyles } from './Welcome.styles';
 
 type Props = {
   hostId: PeerId;
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export const ClientView = ({ hostId, playerName, onJoinGame }: Props) => {
+  const classes = useStyles();
   const [attemptingConnection, setAttemptingConnection] = useState(false);
   const [joinErrorMessage, setJoinErrorMessage] = useState('');
 
@@ -23,6 +25,7 @@ export const ClientView = ({ hostId, playerName, onJoinGame }: Props) => {
   return (
     <>
       <button
+        className={classes.createOrJoinGameButton}
         id='join-game'
         onClick={onJoinClicked}
         disabled={!playerName || attemptingConnection}
