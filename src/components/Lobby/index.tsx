@@ -16,7 +16,6 @@ const useStyles = createUseStyles({
   },
   content: {
     minWidth: '300px',
-    backgroundColor: '#fff',
     borderRadius: '4px',
     padding: '30px',
     display: 'flex',
