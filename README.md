@@ -1,5 +1,5 @@
 # Sudoball
-![Screenshot 2023-07-20 at 16 45 16](https://github.com/jransome/sudoball/assets/22540551/361138c1-31d8-4e92-870d-c736ce89a791)
+![Screenshot](https://github.com/jransome/sudoball/assets/22540551/3cb8aa3b-6063-4422-8639-4feb2d0c82fc)
 
 Welcome to Sudoball, a browser based realtime multiplayer football game (clone of haxball.com) built with WebRTC and Typescript/Node.js.
 
